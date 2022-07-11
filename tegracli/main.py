@@ -42,14 +42,14 @@ def cli(ctx: click.Context):
     
 
 @cli.command()
-@click.option("--limit", "-l", type=int, default=-1, help="Number of messages to retrieve")
-@click.option("--offset_date", "-O", help="Offset retrieval to specific date (UNTESTED")
-@click.option("--offset_id", "-o", type=int, help="Offset retrieval to a specific post number")
+@click.option("--limit", "-l", type=int, default=-1, help="Number of messages to retrieve.")
+@click.option("--offset_date", "-O", type=click.DateTime(['%Y-%m-%d']), help="Offset retrieval to specific date in YYYY-MM-DD format.")
+@click.option("--offset_id", "-o", type=int, help="Offset retrieval to a specific post number.")
 @click.option("--min_id", "-m", type=int, help="Minimal post number.")
 @click.option("--max_id", "-M", type=int, help="Maximal post number")
-@click.option("--add_offset", "-a", type=int, help="Add an offset to the post numbers to be retrieved")
+@click.option("--add_offset", "-a", type=int, help="Add an offset to the post numbers to be retrieved.")
 @click.option("--from_user", "-f", help="Only messages from this user.")
-@click.option("--reverse/--forward", default=True, help="Post numbers counting upward or downward.")
+@click.option("--reverse/--forward", default=True, help="Post numbers counting upward or downward. Defaults to reverse.")
 @click.option("--reply_to", "-r", help="Only messages replied to specific post id.")
 @click.argument("channels", nargs=-1)
 @click.pass_context
