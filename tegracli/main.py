@@ -19,7 +19,14 @@ def get_client(ctx: click.Context) -> TelegramClient:
 
     client = TelegramClient(session_name, api_id, api_hash)
     client.flood_sleep_threshold = 15 * 60
+
     return client
+
+async def ensure_authentification(client):
+    if not await client.is_user_authorized():
+        phone_number = click.prompt("Enter your phone number:")
+        await client.send_code_request(phone_number)
+        await client.sign_in(phone_number, click.prompt("Enter 2FA code: "))
 
 @click.group()
 @click.pass_context
@@ -117,11 +124,7 @@ def str_dict(d):
         return str(d)
 
 async def dispatch_get(users, client: TelegramClient, params: Dict):
-    # assert client.connect()
-    if not await client.is_user_authorized():
-        phone_number = click.prompt("Enter your phone number:")
-        await client.send_code_request(phone_number)
-        await client.sign_in(phone_number, click.prompt("Enter code: "))
+    await ensure_authentification(client)
     me = await client.get_me()
 
     log.info(f"Using telegram account of {me.to_dict().get('username')}")
@@ -150,6 +153,7 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
     await client.send_message("me", f"Hello, myself! I\"m done with {', '.join(users)}!")
 
 async def dispatch_search(queries: list[str], client: TelegramClient):
+    await ensure_authentification(client)
     me = await client.get_me()
     log.info(f"Using telegram accout of {me.to_dict().get('username')}")
     for query in queries:
