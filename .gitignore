@@ -1,0 +1,14 @@
+# ignore credentials
+tegracli.conf.yml
+*.session*
+# ignore data files
+*.jsonl
+*.ndjson
+# ignore builds
+dist/
+# ignore caches
+__pycache__/
+# ignore testing notebooks
+notebooks/
+# ignore dabapush project
+dabapush.yml
