@@ -31,17 +31,17 @@ async def ensure_authentification(client):
 @click.group()
 @click.pass_context
 def cli(ctx: click.Context):
-   
+
     if ctx.obj is None:
         ctx.obj = {}
-    
+
     conf_path = Path("tegracli.conf.yml")
 
-    log.debug(f"Starting tegracli with configuration: {str(conf_path.resolve())}")
-    
     if not conf_path.exists():
-        sys.exit(128)
-        
+        log.error('Configuration not found. Terminating!')
+        sys.exit(127)
+    log.debug(f"Starting tegracli with configuration: {str(conf_path.resolve())}")
+
     with conf_path.open("r", encoding="UTF-8") as config:
         conf = yaml.safe_load(config)
 
