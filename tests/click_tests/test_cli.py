@@ -1,6 +1,5 @@
 import pytest
 from click.testing import CliRunner
-
 from tegracli.main import cli
 
 @pytest.fixture
@@ -10,11 +9,11 @@ def runner():
     return CliRunner()
 
 def test_cli(runner: CliRunner):
-    """ Should run successfully if no channels are given as arguments
+    """ Should show help if no args present
     """
     result = runner.invoke(cli, [''])
     
-    assert result.exit_code == 0
+    assert result.exit_code == 2
 
 def test_get(runner: CliRunner):
     """ Should get results for specified channels
