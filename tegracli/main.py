@@ -68,7 +68,7 @@ async def main(users, client: TelegramClient, params: Dict):
             n = 0
             async for message in client.iter_messages(other, limit=None, reverse=True, wait_time=10, **params):
                 log.debug(f'Received: {other.username}-{message.id}')
-                with Path(f"{other.id}.jsonl").open('a') as file:
+                with Path(f"{other.id}.jsonl").open('a', encoding='utf8') as file:
                     m_dict = message.to_dict()
                     m_dict["user"] = o_dict
                     ujson.dump(str_dict(m_dict), file)
@@ -90,13 +90,13 @@ async def search(queries, client: TelegramClient):
         n = 0
         try:
             async for message in client.iter_messages(None, search=query, limit=15):
-                with Path(f"{query}.jsonl").open('a') as file:
+                with Path(f"{query}.jsonl").open('a', encoding='utf8') as file:
                     m_dict = message.to_dict()
                     ujson.dump(str_dict(m_dict), file)
                     n += 1
                     file.write('\n')
-        except Exception as e:
-            log.error(f'No dice for {query}, because {e}')
+        except Exception as error:
+            log.error(f'No dice for {query}, because {error}')
             continue
         log.info(f'Fetched {n} messages for {query}!')
 
