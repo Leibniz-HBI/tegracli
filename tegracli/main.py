@@ -10,6 +10,17 @@ from telethon import TelegramClient
 from telethon.errors import FloodWaitError
 from loguru import logger as log
 
+def get_client(ctx: click.Context) -> TelegramClient:
+    conf = ctx.obj["credentials"]
+
+    session_name = conf["session_name"]
+    api_id   = conf["api_id"]
+    api_hash = conf["api_hash"]
+
+    client = TelegramClient(session_name, api_id, api_hash)
+    client.flood_sleep_threshold = 15 * 60
+    return client
+
 @click.group()
 @click.pass_context
 def cli(ctx: click.Context):
@@ -56,14 +67,7 @@ def get(
     channels: list[str]
 ) -> None:
     
-    conf = ctx.obj["credentials"]
-    
-    session_name = conf["session_name"]
-    api_id   = conf["api_id"]
-    api_hash = conf["api_hash"]
-
-    client = TelegramClient(session_name, api_id, api_hash)
-    client.flood_sleep_threshold = 15 * 60
+    client = get_client(ctx)
 
     params = {}
     if limit is not None:
@@ -92,14 +96,8 @@ def get(
 @click.pass_context
 def search(ctx: click.Context, queries: list[str]):
 
-    conf = ctx.obj["credentials"]
+    client = get_client(ctx)
 
-    session_name = conf["session_name"]
-    api_id   = conf["api_id"]
-    api_hash = conf["api_hash"]
-
-    client = TelegramClient(session_name, api_id, api_hash)
-    client.flood_sleep_threshold = 15 * 60
     with client:
         client.loop.run_until_complete(dispatch_search(queries, client))
 
