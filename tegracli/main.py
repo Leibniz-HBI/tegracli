@@ -87,6 +87,21 @@ def get(
     with client:
         client.loop.run_until_complete(dispatch_get(channels, client, params=params))
 
+@cli.command()
+@click.argument("queries", nargs=-1)
+@click.pass_context
+def search(ctx: click.Context, queries: list[str]):
+
+    conf = ctx.obj["credentials"]
+
+    session_name = conf["session_name"]
+    api_id   = conf["api_id"]
+    api_hash = conf["api_hash"]
+
+    client = TelegramClient(session_name, api_id, api_hash)
+    client.flood_sleep_threshold = 15 * 60
+    with client:
+        client.loop.run_until_complete(dispatch_search(queries, client))
 
 def str_dict(d):
     if type(d) is dict:
@@ -133,7 +148,7 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
         log.info(f"Fetched {n} messages for {other.to_dict().get('title')}!")
     await client.send_message("me", f"Hello, myself! I\"m done with {', '.join(users)}!")
 
-async def search(queries, client: TelegramClient):
+async def dispatch_search(queries: list[str], client: TelegramClient):
     me = await client.get_me()
     log.info(f"Using telegram accout of {me.to_dict().get('username')}")
     for query in queries:
