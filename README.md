@@ -67,6 +67,7 @@ Options:
 ## Result File Format
 
 Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's id, for searches the query.
+**BEWARE:** how directories and files are layed out is subject to active development and prone to changes in the near future.
 
 # Developer Installation
 
