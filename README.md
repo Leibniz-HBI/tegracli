@@ -5,7 +5,9 @@ A convenience wrapper around Telethon and the Telegram Client API for research p
 # Installation Instructions
 
 `tegracli` uses Poetry and python >= 3.9 for building and installing.
-To install using pipx, run ``.
+
+To install using pipx, download the latest release and run `pipx install ./tegracli-x-x-x.`.
+A release via pip is planned for the future, in this case install simply with `pipx install tegracli`.
 
 ## How to get API keys
 
@@ -64,12 +66,12 @@ Options:
 
 ## Result File Format
 
-Messages are stored in `jsonl`-files on a per channel/query basis.
+Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's id, for searches the query.
 
 # Developer Installation
 
-1. Install [poetry](https://python-poetry.org/docs/#installation)
-2. Clone repository
-3. In the directory run `poetry install`
-4. Run `poetry shell` to start development virtualenv
-6. Run `pytest` to run all tests
+1. Install [poetry](https://python-poetry.org/docs/#installation),
+2. Clone repository and unzip, if necessary,
+3. In the directory run `poetry install`,
+4. Run `poetry shell` to start the development virtualenv,
+6. Run `pytest` to run all tests.
