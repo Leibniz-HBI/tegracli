@@ -95,7 +95,7 @@ def get(
     reply_to: str or None,
     channels: list[str],
 ) -> None:
-    """Get messages for the specified channels."""
+    """Get messages for the specified channels by either ID or username."""
     client = get_client(ctx)
 
     params = {}
