@@ -50,6 +50,11 @@ Options:
                                 Defaults to reverse.
   -r, --reply_to TEXT           Only messages replied to specific 
 ```
+I.e. this call would retrieve messages from the Telegram channel "corona_infokanal_bmg".
+```bash
+tegracli get --limit 50 corona_infokanal_bmg
+```
+
 
 ## SEARCH
 
