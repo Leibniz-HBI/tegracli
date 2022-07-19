@@ -155,6 +155,8 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
 
     for user in users:
         try:
+            if str.isnumeric(user):
+                user = int(user)
             other = await client.get_entity(user)
             o_dict = other.to_dict()
 
