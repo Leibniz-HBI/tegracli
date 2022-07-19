@@ -100,7 +100,7 @@ def get(
 
     params = {}
     if limit is not None:
-        params["limit"] = limit
+        params["limit"] = None if limit == -1 else limit
     if offset_date is not None:
         params["offset_date"] = offset_date
     if offset_id is not None:
