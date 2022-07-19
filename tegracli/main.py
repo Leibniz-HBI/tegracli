@@ -1,20 +1,22 @@
 import datetime
 import sys
 import time
-from typing import Dict
 from pathlib import Path
-import ujson
+from typing import Dict
+
 import click
+import ujson
 import yaml
+from loguru import logger as log
 from telethon import TelegramClient
 from telethon.errors import FloodWaitError
-from loguru import logger as log
+
 
 def get_client(ctx: click.Context) -> TelegramClient:
     conf = ctx.obj["credentials"]
 
     session_name = conf["session_name"]
-    api_id   = conf["api_id"]
+    api_id = conf["api_id"]
     api_hash = conf["api_hash"]
 
     client = TelegramClient(session_name, api_id, api_hash)
@@ -22,11 +24,13 @@ def get_client(ctx: click.Context) -> TelegramClient:
 
     return client
 
+
 async def ensure_authentification(client):
     if not await client.is_user_authorized():
         phone_number = click.prompt("Enter your phone number:")
         await client.send_code_request(phone_number)
         await client.sign_in(phone_number, click.prompt("Enter 2FA code: "))
+
 
 @click.group()
 @click.pass_context
@@ -38,7 +42,7 @@ def cli(ctx: click.Context):
     conf_path = Path("tegracli.conf.yml")
 
     if not conf_path.exists():
-        log.error('Configuration not found. Terminating!')
+        log.error("Configuration not found. Terminating!")
         sys.exit(127)
     log.debug(f"Starting tegracli with configuration: {str(conf_path.resolve())}")
 
@@ -46,17 +50,35 @@ def cli(ctx: click.Context):
         conf = yaml.safe_load(config)
 
     ctx.obj["credentials"] = conf
-    
+
 
 @cli.command()
-@click.option("--limit", "-l", type=int, default=-1, help="Number of messages to retrieve.")
-@click.option("--offset_date", "-O", type=click.DateTime(['%Y-%m-%d']), help="Offset retrieval to specific date in YYYY-MM-DD format.")
-@click.option("--offset_id", "-o", type=int, help="Offset retrieval to a specific post number.")
+@click.option(
+    "--limit", "-l", type=int, default=-1, help="Number of messages to retrieve."
+)
+@click.option(
+    "--offset_date",
+    "-O",
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Offset retrieval to specific date in YYYY-MM-DD format.",
+)
+@click.option(
+    "--offset_id", "-o", type=int, help="Offset retrieval to a specific post number."
+)
 @click.option("--min_id", "-m", type=int, help="Minimal post number.")
 @click.option("--max_id", "-M", type=int, help="Maximal post number")
-@click.option("--add_offset", "-a", type=int, help="Add an offset to the post numbers to be retrieved.")
+@click.option(
+    "--add_offset",
+    "-a",
+    type=int,
+    help="Add an offset to the post numbers to be retrieved.",
+)
 @click.option("--from_user", "-f", help="Only messages from this user.")
-@click.option("--reverse/--forward", default=True, help="Post numbers counting upward or downward. Defaults to reverse.")
+@click.option(
+    "--reverse/--forward",
+    default=True,
+    help="Post numbers counting upward or downward. Defaults to reverse.",
+)
 @click.option("--reply_to", "-r", help="Only messages replied to specific post id.")
 @click.argument("channels", nargs=-1)
 @click.pass_context
@@ -71,10 +93,9 @@ def get(
     from_user: str or None,
     reverse: bool,
     reply_to: str or None,
-    channels: list[str]
+    channels: list[str],
 ) -> None:
-    """ Get messages for the specified channels.
-    """
+    """Get messages for the specified channels."""
     client = get_client(ctx)
 
     params = {}
@@ -99,11 +120,12 @@ def get(
     with client:
         client.loop.run_until_complete(dispatch_get(channels, client, params=params))
 
+
 @cli.command()
 @click.argument("queries", nargs=-1)
 @click.pass_context
 def search(ctx: click.Context, queries: list[str]):
-    """ This function searches Telegram content that is available to your account
+    """This function searches Telegram content that is available to your account
     for the specified search term(s).
     """
     client = get_client(ctx)
@@ -111,9 +133,10 @@ def search(ctx: click.Context, queries: list[str]):
     with client:
         client.loop.run_until_complete(dispatch_search(queries, client))
 
+
 def str_dict(d):
     if type(d) is dict:
-        return {k:str_dict(v) for (k,v) in d.items()}
+        return {k: str_dict(v) for (k, v) in d.items()}
     elif d is None:
         return d
     elif type(d) is list:
@@ -123,12 +146,13 @@ def str_dict(d):
     else:
         return str(d)
 
+
 async def dispatch_get(users, client: TelegramClient, params: Dict):
     await ensure_authentification(client)
     me = await client.get_me()
 
     log.info(f"Using telegram account of {me.to_dict().get('username')}")
-    
+
     for user in users:
         try:
             other = await client.get_entity(user)
@@ -144,13 +168,18 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
                     n += 1
                     file.write("\n")
         except FloodWaitError as err:
-            log.error(f"FloodWaitError occurred. Waiting for {datetime.timedelta(seconds=err.seconds)} to resume.")
+            log.error(
+                f"FloodWaitError occurred. Waiting for {datetime.timedelta(seconds=err.seconds)} to resume."
+            )
             time.sleep(err.seconds)
         except ValueError as err:
             log.error(f"No dice for {user}, because {err}")
             continue
         log.info(f"Fetched {n} messages for {other.to_dict().get('title')}!")
-    await client.send_message("me", f"Hello, myself! I\"m done with {', '.join(users)}!")
+    await client.send_message(
+        "me", f"Hello, myself! I\"m done with {', '.join(users)}!"
+    )
+
 
 async def dispatch_search(queries: list[str], client: TelegramClient):
     await ensure_authentification(client)
@@ -169,6 +198,7 @@ async def dispatch_search(queries: list[str], client: TelegramClient):
             log.error(f"No dice for {query}, because {error}")
             continue
         log.info(f"Fetched {n} messages for {query}!")
+
 
 if __name__ == "main":
     cli({})
