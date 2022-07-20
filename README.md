@@ -112,4 +112,4 @@ Messages are stored in `jsonl`-files per channel or query. For channels filename
 2. Clone repository and unzip, if necessary,
 3. In the directory run `poetry install`,
 4. Run `poetry shell` to start the development virtualenv,
-6. Run `pytest` to run all tests, coverage report can be found under `tests/coverage`.
+6. Run `pytest` to run tests, run `pytest --run_api` too include tests against the Telegram API (**these do require a valid configuration**), coverage report can be found under `tests/coverage`.
