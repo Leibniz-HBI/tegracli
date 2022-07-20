@@ -12,11 +12,9 @@ from telethon import TelegramClient
 from telethon.errors import FloodWaitError
 
 
-def get_client(ctx: click.Context) -> TelegramClient:
+def get_client(conf: Dict) -> TelegramClient:
     """ Utility function to initialize the TelegramClient from the loaded configuration values.
     """
-    conf = ctx.obj["credentials"]
-
     session_name = conf["session_name"]
     api_id = conf["api_id"]
     api_hash = conf["api_hash"]
@@ -102,7 +100,7 @@ def get(
     channels: list[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
-    client = get_client(ctx)
+    client = get_client(ctx.obj["credentials"])
 
     params = {}
     if limit is not None:
@@ -134,7 +132,7 @@ def search(ctx: click.Context, queries: list[str]):
     """This function searches Telegram content that is available to your account
     for the specified search term(s).
     """
-    client = get_client(ctx)
+    client = get_client(ctx.obj["credentials"])
 
     with client:
         client.loop.run_until_complete(dispatch_search(queries, client))
