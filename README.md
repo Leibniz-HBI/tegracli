@@ -11,7 +11,7 @@ A release via pip is planned for the future, in this case install simply with `p
 
 ## How to get API keys
 
-If you don't have API keys for Telegram, head over to [my.telegram.org](https://my.telegram.org). Follow the instructions and create yourself an app and pluck the keys into `tegracli.conf.yaml`.
+If you don't have API keys for Telegram, head over to [my.telegram.org](https://my.telegram.org). Click on [API development tools](https://my.telegram.org/apps), fill the form to create yourself an app and pluck the keys into `tegracli.conf.yaml`. The session name can be arbitrary.
 
 ```yaml
 api_id: 1234567
