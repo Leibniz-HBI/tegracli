@@ -1,0 +1,8 @@
+Name                               Stmts   Miss  Cover
+------------------------------------------------------
+tegracli/__init__.py                   0      0   100%
+tegracli/main.py                     132     75    43%
+tests/click_tests/test_cli.py         32      0   100%
+tests/dispatchers/test_search.py      15      7    53%
+------------------------------------------------------
+TOTAL                                179     82    54%

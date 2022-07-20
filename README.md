@@ -50,9 +50,31 @@ Options:
                                 Defaults to reverse.
   -r, --reply_to TEXT           Only messages replied to specific 
 ```
-I.e. this call would retrieve messages from the Telegram channel "corona_infokanal_bmg".
-```bash
+| **parameter**       | **description**                                                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **channels**    | a list of of either telegram usernames, channel or group URLs or user IDs.                                                  |
+| **limit**       | number of messages to retrieve, positive integer. If set to `-1` , retrieves all messages in the channel. defaults to `-1`. |
+| **offset_date** |                                                                                                                             |
+| **offset_id**   |                                                                                                                             |
+| **min_id**      |                                                                                                                             |
+| **max_id**      |                                                                                                                             |
+| **add_offset**  |                                                                                                                             |
+| **from_user**   |                                                                                                                             |
+| **reverse/forward**     | flag to indicate whether messages should be retrieved in chronological or reverse chronological order.                      |
+| **reply_to**    |                                                                                                                             |
+
+### Basic Examples
+
+To retrieve the last fifty messages from a Telegram channel:
+
+```
 tegracli get --limit 50 corona_infokanal_bmg
+```
+
+To retrieve the entire history starting with post #1 of a channel, set `limit` to `-1`.
+
+```
+tegracli get --reverse --limit -1 corona_infokanal_bmg
 ```
 
 
@@ -71,7 +93,7 @@ Options:
 
 ## Result File Format
 
-Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's id, for searches the query.
+Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's or user's id, for searches the query.
 **BEWARE:** how directories and files are layed out is subject to active development and prone to changes in the near future.
 
 # Developer Installation
@@ -80,4 +102,4 @@ Messages are stored in `jsonl`-files per channel or query. For channels filename
 2. Clone repository and unzip, if necessary,
 3. In the directory run `poetry install`,
 4. Run `poetry shell` to start the development virtualenv,
-6. Run `pytest` to run all tests.
+6. Run `pytest` to run all tests, coverage report can be found under `tests/coverage`.

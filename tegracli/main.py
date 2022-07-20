@@ -13,6 +13,8 @@ from telethon.errors import FloodWaitError
 
 
 def get_client(ctx: click.Context) -> TelegramClient:
+    """ Utility function to initialize the TelegramClient from the loaded configuration values.
+    """
     conf = ctx.obj["credentials"]
 
     session_name = conf["session_name"]
@@ -26,6 +28,9 @@ def get_client(ctx: click.Context) -> TelegramClient:
 
 
 async def ensure_authentification(client):
+    """ Utility function to ensure that the user is authorized.
+    If not an interactive prompt for Telegrams 2FA method is shown.
+    """
     if not await client.is_user_authorized():
         phone_number = click.prompt("Enter your phone number:")
         await client.send_code_request(phone_number)
@@ -35,7 +40,8 @@ async def ensure_authentification(client):
 @click.group()
 @click.pass_context
 def cli(ctx: click.Context):
-
+    """ Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!
+    """
     if ctx.obj is None:
         ctx.obj = {}
 
@@ -134,7 +140,9 @@ def search(ctx: click.Context, queries: list[str]):
         client.loop.run_until_complete(dispatch_search(queries, client))
 
 
-def str_dict(d):
+def str_dict(d: Dict) -> Dict:
+    """ Utility function to recursively convert all values in the input dict to strings.
+    """
     if type(d) is dict:
         return {k: str_dict(v) for (k, v) in d.items()}
     elif d is None:
