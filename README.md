@@ -34,7 +34,7 @@ To _get_ messages from a number of channels, use this command.
 ```
 Usage: tegracli get [OPTIONS] [CHANNELS]...
 
-  Get messages for the specified channels.
+  Get messages for the specified channels by either ID or username.
 
 Options:
   -l, --limit INTEGER           Number of messages to retrieve.
@@ -46,22 +46,23 @@ Options:
   -a, --add_offset INTEGER      Add an offset to the post numbers to be
                                 retrieved.
   -f, --from_user TEXT          Only messages from this user.
-  --reverse / --forward         Post numbers counting upward or downward.
-                                Defaults to reverse.
-  -r, --reply_to TEXT           Only messages replied to specific 
+  --reverse / --forward         Should post numbers count upward or downward.
+                                Defaults to forward.
+  -r, --reply_to TEXT           Only messages replied to specific post id.
+  --help                        Show this message and exit.
 ```
-| **parameter**       | **description**                                                                                                                 |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **channels**    | a list of of either telegram usernames, channel or group URLs or user IDs.                                                  |
-| **limit**       | number of messages to retrieve, positive integer. If set to `-1` , retrieves all messages in the channel. defaults to `-1`. |
-| **offset_date** |                                                                                                                             |
-| **offset_id**   |                                                                                                                             |
-| **min_id**      |                                                                                                                             |
-| **max_id**      |                                                                                                                             |
-| **add_offset**  |                                                                                                                             |
-| **from_user**   |                                                                                                                             |
-| **reverse/forward**     | flag to indicate whether messages should be retrieved in chronological or reverse chronological order.                      |
-| **reply_to**    |                                                                                                                             |
+| **parameter**       | **description**                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **channels**        | a list of of either telegram usernames, channel or group URLs or user IDs.                                                   |
+| **limit**           | number of messages to retrieve, positive integer. If set to `-1` , retrieves all messages in the channel. defaults to `-1`.  |
+| **offset_date**     | specify start point of retrieval by date, retrieval direction is controlled by `reverse/forward`. Format must be YYYY-MM-DD. |
+| **offset_id**       | specify start point of retrieval by post number, retrieval direction is controlled by `reverse/forward`.                     |
+| **min_id**          | sets the minimum post number                                                                                                 |
+| **max_id**          | sets the maximum post number                                                                                                 |
+| **add_offset**      | add a offset to the post numbers to be retrieved                                                                             |
+| **from_user**       | limit messages to posts *from* a specific user                                                                               |
+| **reply_to**        | limit messages to replies *to* a specific user                                                                               |
+| **reverse/forward** | flag to indicate whether messages should be retrieved in chronological or reverse chronological order.                       |
 
 ### Basic Examples
 
@@ -76,8 +77,17 @@ To retrieve the entire history starting with post #1 of a channel, set `limit` t
 ```
 tegracli get --reverse --limit -1 corona_infokanal_bmg
 ```
+To retrieve messages sent after Januar, 1st 2022:
 
+```
+tegracli get --offset_data 2022-01-01 corona_infokanal_bmg
+```
 
+To retrieve message sent before Januar, 1st 2022:
+
+```
+tegracli get --reverse --offset_data 2022-01-01 corona_infokanal_bmg
+```
 ## SEARCH
 
 To _search_ messages of your chats and groups and channels you are subscribed to, use this command.
