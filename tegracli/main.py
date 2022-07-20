@@ -83,7 +83,7 @@ def cli(ctx: click.Context):
 @click.option(
     "--reverse/--forward",
     default=True,
-    help="Post numbers counting upward or downward. Defaults to reverse.",
+    help="Should post numbers count upward or downward. Defaults to forward.",
 )
 @click.option("--reply_to", "-r", help="Only messages replied to specific post id.")
 @click.argument("channels", nargs=-1)
