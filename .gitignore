@@ -14,3 +14,4 @@ notebooks/
 dabapush.yml
 # ignore coverage data file
 .coverage
+poetry.lock
