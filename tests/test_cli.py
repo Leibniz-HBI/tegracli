@@ -1,3 +1,11 @@
+""" # Command Line Interface Tests
+
+This test suite tests the program's CLICK interface.
+
+Tests should be run with click.CliRunner.
+
+"""
+
 from pathlib import Path
 from unittest.mock import patch
 
