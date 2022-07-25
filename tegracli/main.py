@@ -13,6 +13,7 @@ from loguru import logger as log
 from telethon import TelegramClient
 
 from .dispatch import dispatch_get, dispatch_search
+from .group import Group
 from .utilities import ensure_authentication, get_client
 
 
@@ -126,19 +127,39 @@ def group():
 
 @group.command()
 @click.option(
-    "--read_file", "-f", type=click.Path(), help="read account list from file"
+    "--read_file",
+    "-f",
+    type=click.Path(),
+    help="read an account list from a file, one handle/id/url per line.",
+)
+@click.option(
+    "--start_date",
+    "-s",
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date for the collection. Must be in YYY-MM-DD format.",
 )
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
-def init(read_file: Path, name: str, accounts: List[str]):
+# @click.pass_context
+def init(
+    # ctx: click.Context,
+    read_file: Path,
+    start_date: datetime,
+    name: str,
+    accounts: List[str],
+):
     """initialize a new account group"""
     cwd = Path()
-    results_diretory = cwd / name
+    results_directory = cwd / name
+    group_conf_file = results_directory / "tegracli_group.conf.yml"
     account_group = []
-
+    # client: TelegramClient = ctx.obj["client"]
+    params = {"limit": 0, "reverse": True}
+    if start_date is not None:
+        params["offset_date"] = start_date
     # check whether the directory we try to create is already there.
-    if results_diretory.exists():
-        log.error(f"{results_diretory} already exists. Aborting.")
+    if results_directory.exists():
+        log.error(f"{results_directory} already exists. Aborting.")
         sys.exit(127)
 
     # copy entries to account group
@@ -154,7 +175,14 @@ def init(read_file: Path, name: str, accounts: List[str]):
         else:
             with read_file.open("r") as file:
                 for line in file.readlines():
+                    # test whether `line` is a valid id|handle|url
                     account_group.append(line)
+
+    if len(account_group) >= 1:
+        results_directory.mkdir()
+        account_group = Group(accounts, name, params)
+        with group_conf_file.open("w") as file:
+            yaml.dump(account_group, file)
 
 
 @cli.command()
