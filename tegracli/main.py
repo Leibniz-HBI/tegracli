@@ -78,15 +78,15 @@ def cli(ctx: click.Context):
 @click.pass_context
 def get(  # pylint: disable=too-many-arguments
     ctx: click.Context,
-    limit: int or None,
-    offset_date: str or None,
-    offset_id: str or None,
-    min_id: int or None,
-    max_id: int or None,
-    add_offset: int or None,
-    from_user: str or None,
+    limit: int,
+    offset_date: str,
+    offset_id: str,
+    min_id: int,
+    max_id: int,
+    add_offset: int,
+    from_user: str,
     reverse: bool,
-    reply_to: str or None,
+    reply_to: str,
     channels: list[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
@@ -127,7 +127,7 @@ def group():
 )
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
-def init(read_file: Path or None, name: str, accounts: List[str]):
+def init(read_file: Path, name: str, accounts: List[str]):
     """initialize a new account group"""
     cwd = Path()
     results_diretory = cwd / name
