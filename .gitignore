@@ -12,5 +12,8 @@ __pycache__/
 notebooks/
 # ignore dabapush project
 dabapush.yml
+# ignore coverage data file
 .coverage
 poetry.lock
+# ignore random things
+.vscode

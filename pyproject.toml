@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tegracli"
 version = "0.1.0"
-description = ""
+description = "A research-focused Telegram CLI application"
 authors = ["Philipp Kessling"]
 
 [tool.poetry.dependencies]
@@ -14,14 +14,18 @@ PyYAML = "^6.0"
 pandas = "^1.4.3"
 
 [tool.poetry.dev-dependencies]
-ipykernel = "^6.9.1"
-isort = "^5.10.1"
-pylint = "^2.14.5"
-black = "^22.6.0"
 pytest = "^7.1.2"
+ipykernel = "^6.9.1"
+pytest-socket = "^0.5.1"
+pytest-asyncio = "^0.18.3"
+black = "^22.6.0"
+isort = "^5.10.1"
 pytest-cov = "^3.0.0"
 coverage = "^6.4.2"
-pre-commit = "^2.20.0"
+
+[tool.pytest.ini_options]
+addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli"
+asyncio_mode = "strict"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
