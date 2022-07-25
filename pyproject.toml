@@ -33,3 +33,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 tegracli = 'tegracli.main:cli'
+
+[tool.mypy]
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = [
+    "telethon",
+    "telethon.*"
+]
+ignore_missing_imports = true
