@@ -79,13 +79,10 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
                 done = True
                 continue
             done = True
-    await client.send_message(
-        "me", f"Hello, myself! I\"m done with {', '.join(users)}!"
-    )
 
 
 async def dispatch_search(queries: list[str], client: TelegramClient):
-    """disptach a global search"""
+    """dispatch a global search"""
     local_account = await client.get_me()
     log.info(f"Using telegram accout of {local_account.username}")
     for query in queries:
