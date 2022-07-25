@@ -3,6 +3,7 @@
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -73,20 +74,22 @@ def cli(ctx: click.Context):
     default=True,
     help="Should post numbers count upward or downward. Defaults to forward.",
 )
-@click.option("--reply_to", "-r", help="Only messages replied to specific post id.")
+@click.option(
+    "--reply_to", "-r", type=int, help="Only messages replied to specific post id."
+)
 @click.argument("channels", nargs=-1)
 @click.pass_context
 def get(  # pylint: disable=too-many-arguments
     ctx: click.Context,
     limit: int,
-    offset_date: str,
-    offset_id: str,
+    offset_date: datetime,
+    offset_id: int,
     min_id: int,
     max_id: int,
     add_offset: int,
     from_user: str,
     reverse: bool,
-    reply_to: str,
+    reply_to: int,
     channels: list[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
