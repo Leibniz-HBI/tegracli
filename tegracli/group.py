@@ -10,6 +10,8 @@ import yaml
 class Group(yaml.YAMLObject):
     """Manage group settings and members"""
 
+    yaml_tag = "!tegracli.group.Group"
+
     def __init__(self, members: List[str], name: str, params: Dict) -> None:
         super().__init__()
 
