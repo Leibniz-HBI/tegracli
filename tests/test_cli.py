@@ -16,6 +16,8 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
+from tegracli.group import Group
+
 patcher = patch("telethon.TelegramClient")
 patcher.start()
 
@@ -31,9 +33,10 @@ def runner():
 def test_help_prompt(runner: CliRunner, tmpdir: Path):
     """Should show help if no args present"""
     with runner.isolated_filesystem(tmpdir):
-        result = runner.invoke(cli, [""])
+        result = runner.invoke(cli, ["--help"])
 
-        assert result.exit_code == 2
+        assert result.exit_code == 0
+        assert "Show this message and exit." in result.stdout
 
 
 def test_configuration_present(runner: CliRunner, tmp_path: Path):
@@ -53,7 +56,7 @@ def test_configuration_present(runner: CliRunner, tmp_path: Path):
             )
 
         result = runner.invoke(cli, ["get", "channel"])
-
+        print(result.stdout)
         assert conf_file.exists()
         assert not result.exception
         assert result.exit_code == 0
@@ -63,7 +66,7 @@ def test_configuration_missing(runner: CliRunner, tmpdir: Path):
     """Should fail if no config is present in the current directory"""
     with runner.isolated_filesystem(tmpdir):
         result = runner.invoke(cli, ["get", "channel"])
-
+        print(result.stdout)
         assert result.exit_code == 127
 
 
@@ -72,13 +75,16 @@ def test_account_group_creation(runner: CliRunner, tmp_path: Path):
     resolve those user names and save messages by user in a jsonl-file.
 
     I.e. a call to this command would look like this:
-    `tegracli group init my_little_account_list --read_file account_list.csv
-
+    `tegracli group init --read_file account_list.csv my_little_account_list` to
+    load a account list from a file and write the configuration file to disk.
     """
+
     with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
         conf_file = Path(temp_dir) / "tegracli.conf.yml"
         list_file = Path(temp_dir) / "account_list.csv"
         r_folder = Path(temp_dir) / "my_little_account_list/"
+        r_file = r_folder / "tegracli_group.conf.yml"
+
         # fake credentials
         with conf_file.open("w") as config:
             yaml.dump(
@@ -89,26 +95,26 @@ def test_account_group_creation(runner: CliRunner, tmp_path: Path):
                 },
                 config,
             )
-
+        accounts = ["1004347112", "1196000400", "1415098098", "1446651076"]
         # fake account list
         with list_file.open("w") as account_list:
-            for line in ["1004347112", "1196000400", "1415098098", "1446651076"]:
+            for line in accounts:
                 account_list.write(line + "\n")
 
+        # run command
         result = runner.invoke(
-            cli,
-            ["group", "init", "my_little_account_list", "--read_file account_list.csv"],
+            cli, "group init --read_file account_list.csv my_little_account_list"
         )
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0  # indicating success?
         assert r_folder.exists()  # is the folder created?
-        for file_name in r_folder.rglob("*jsonl"):
-            assert str(file_name) in [
-                "1004347112.jsonl",
-                "1196000400.jsonl",
-                "1415098098.jsonl",
-                "1446651076.jsonl",
-            ]
+        assert r_file.exists()  # does the group conf exists?
+
+        with r_file.open("r") as file:
+            res = yaml.full_load(file)
+            assert isinstance(res, Group)
+            for member in res.members:
+                assert member in accounts
 
 
 def test_search(runner: CliRunner):
