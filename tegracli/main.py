@@ -2,6 +2,7 @@
 
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -136,14 +137,12 @@ def group():
     "--start_date",
     "-s",
     type=click.DateTime(["%Y-%m-%d"]),
-    help="Start date for the collection. Must be in YYY-MM-DD format.",
+    help="Start date for the collection. Must be in YYYY-MM-DD format.",
 )
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
-# @click.pass_context
 def init(
-    # ctx: click.Context,
-    read_file: Path,
+    read_file: str,
     start_date: datetime,
     name: str,
     accounts: List[str],
@@ -153,8 +152,8 @@ def init(
     results_directory = cwd / name
     group_conf_file = results_directory / "tegracli_group.conf.yml"
     account_group = []
-    # client: TelegramClient = ctx.obj["client"]
     params = {"limit": 0, "reverse": True}
+    read_file = Path(read_file)
     if start_date is not None:
         params["offset_date"] = start_date
     # check whether the directory we try to create is already there.
@@ -172,17 +171,23 @@ def init(
         if not read_file.exists():
             log.error(f"Cannot read non-existent file {read_file}. Aborting.")
             sys.exit(127)
-        else:
-            with read_file.open("r") as file:
-                for line in file.readlines():
-                    # test whether `line` is a valid id|handle|url
-                    account_group.append(line)
+
+        with read_file.open("r", encoding="utf8") as file:
+            for line in file.readlines():
+                line = str(line)
+                # test whether `line` is a valid id|handle|url
+                for match in re.finditer(r"\d+", line):
+                    matched_line = match.group(0)
+                    log.debug(f"Found {matched_line}.")
+                    account_group.append(matched_line)
+
+    log.debug(f"Found these accounts: {', '.join(account_group)}")
 
     if len(account_group) >= 1:
         results_directory.mkdir()
-        account_group = Group(accounts, name, params)
+        _group = Group(account_group, name, params)
         with group_conf_file.open("w") as file:
-            yaml.dump(account_group, file)
+            yaml.dump(_group, file)
 
 
 @cli.command()
@@ -198,5 +203,5 @@ def search(ctx: click.Context, queries: list[str]):
         client.loop.run_until_complete(dispatch_search(queries, client))
 
 
-if __name__ == "main":
-    cli({})
+# if __name__ == "main":
+#     cli({})
