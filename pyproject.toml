@@ -24,7 +24,7 @@ pytest-cov = "^3.0.0"
 coverage = "^6.4.2"
 
 [tool.pytest.ini_options]
-addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli"
+addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli --capture=sys"
 asyncio_mode = "strict"
 
 [build-system]
