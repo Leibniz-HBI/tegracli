@@ -4,6 +4,7 @@ tegracli.conf.yml
 # ignore data files
 *.jsonl
 *.ndjson
+*.csv
 # ignore builds
 dist/
 # ignore caches
