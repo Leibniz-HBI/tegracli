@@ -19,14 +19,18 @@ from .utilities import ensure_authentication, get_client
 
 
 @click.group()
+@click.option("--debug/--no-debug", default=True)
 @click.pass_context
-def cli(ctx: click.Context):
+def cli(ctx: click.Context, debug: bool):
     """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
 
-    async def handle_auth(client: TelegramClient):
+    async def _handle_auth(client: TelegramClient):
         phone_number = click.prompt("Enter your phone number:")
         await client.send_code_request(phone_number)
-        await client.sign_in(phone_number, click.prompt("Enter 2FA code: "))
+        await client.sign_in(phone_number, click.prompt("Enter 2FA code:"))
+
+    if debug:
+        log.add("tegracli.log.json", serialize=True)
 
     if ctx.obj is None:
         ctx.obj = {}
@@ -46,7 +50,7 @@ def cli(ctx: click.Context):
     ctx.obj["credentials"] = conf
     ctx.obj["client"] = client
 
-    client.loop.run_until_complete(ensure_authentication(client, handle_auth))
+    client.loop.run_until_complete(ensure_authentication(client, _handle_auth))
 
 
 @cli.command()
@@ -101,7 +105,7 @@ def get(  # pylint: disable=too-many-arguments
     if limit is not None:
         params["limit"] = None if limit == -1 else limit
     if offset_date is not None:
-        params["offset_date"] = offset_date
+        params["offset_date"] = offset_date  # type: ignore
     if offset_id is not None:
         params["offset_id"] = offset_id
     if max_id is not None:
@@ -111,7 +115,7 @@ def get(  # pylint: disable=too-many-arguments
     if add_offset is not None:
         params["add_offset"] = add_offset
     if from_user is not None:
-        params["from_user"] = from_user
+        params["from_user"] = from_user  # type: ignore
     if reply_to is not None:
         params["reply_to"] = reply_to
     params["reverse"] = reverse
@@ -151,41 +155,39 @@ def init(
     cwd = Path()
     results_directory = cwd / name
     group_conf_file = results_directory / "tegracli_group.conf.yml"
-    account_group = []
     params = {"limit": 0, "reverse": True}
-    read_file = Path(read_file)
     if start_date is not None:
-        params["offset_date"] = start_date
+        params["offset_date"] = start_date  # type: ignore
     # check whether the directory we try to create is already there.
     if results_directory.exists():
         log.error(f"{results_directory} already exists. Aborting.")
         sys.exit(127)
 
-    # copy entries to account group
-    if accounts is not None and len(accounts) >= 1:
-        for entry in accounts:
-            account_group.append(entry)
+    # intialize account group
+    if accounts is None:
+        accounts = []
 
     if read_file is not None:
+        _read_file = Path(read_file)
         # check whether that file exists:
-        if not read_file.exists():
-            log.error(f"Cannot read non-existent file {read_file}. Aborting.")
+        if not _read_file.exists():
+            log.error(f"Cannot read non-existent file {_read_file}. Aborting.")
             sys.exit(127)
 
-        with read_file.open("r", encoding="utf8") as file:
+        with _read_file.open("r", encoding="utf8") as file:
             for line in file.readlines():
                 line = str(line)
                 # test whether `line` is a valid id|handle|url
                 for match in re.finditer(r"\d+", line):
                     matched_line = match.group(0)
                     log.debug(f"Found {matched_line}.")
-                    account_group.append(matched_line)
+                    accounts.append(matched_line)
 
-    log.debug(f"Found these accounts: {', '.join(account_group)}")
+    log.debug(f"Found these accounts: {', '.join(accounts)}")
 
-    if len(account_group) >= 1:
+    if len(accounts) >= 1:
         results_directory.mkdir()
-        _group = Group(account_group, name, params)
+        _group = Group(accounts, name, params)
         with group_conf_file.open("w") as file:
             yaml.dump(_group, file)
 
