@@ -164,6 +164,8 @@ def init(
         sys.exit(127)
 
     # intialize account group
+    if isinstance(accounts, tuple):
+        accounts = list(accounts)
     if accounts is None:
         accounts = []
 
