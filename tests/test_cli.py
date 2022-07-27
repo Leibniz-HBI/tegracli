@@ -103,7 +103,10 @@ def test_account_group_creation(runner: CliRunner, tmp_path: Path):
 
         # run command
         result = runner.invoke(
-            cli, "group init --read_file account_list.csv my_little_account_list"
+            cli,
+            "group init\
+             --read_file account_list.csv\
+             --start_date 2022-01-01 my_little_account_list",
         )
 
         assert result.exit_code == 0  # indicating success?
