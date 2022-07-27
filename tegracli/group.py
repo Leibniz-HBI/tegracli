@@ -2,7 +2,7 @@
 Philipp Kessling, Leibniz-HBI, 2022
 """
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import ujson
 import yaml
@@ -36,7 +36,11 @@ class Group(yaml.YAMLObject):
     def _profiles_path(self) -> Path:
         return self._group_dir / PROF_FILE_NAME
 
-    def get_member_profile(self, member: str) -> Dict or None:
+    @property
+    def _conf_path(self) -> Path:
+        return self._group_dir / CONF_FILE_NAME
+
+    def get_member_profile(self, member: str) -> Optional[Dict]:
         """loads a user profile from disk
 
         Parameters
@@ -73,3 +77,8 @@ class Group(yaml.YAMLObject):
                 if len(ids) != 0:
                     return max(ids)
         return 1
+
+    def dump(self):
+        """dump the configuration to disk"""
+        with self._conf_path.open("w") as conf_file:
+            yaml.dump(self, conf_file)
