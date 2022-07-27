@@ -23,8 +23,8 @@ This template file is provided with the repository.
 
 # Usage
 
-`tegracli` is a terminal application to access the Telegram API for research purposes. 
-In order to retrieve messages the configuration-file from the section before must be present in the directory you start `tegracli`. 
+`tegracli` is a terminal application to access the Telegram API for research purposes.
+In order to retrieve messages the configuration-file from the section before must be present in the directory you start `tegracli`.
 The following commands are available:
 
 ## GET
@@ -99,6 +99,62 @@ Usage: tegracli search [OPTIONS] [QUERIES]...
 
 Options:
   --help  Show this message and exit.
+```
+
+## GROUP INIT and GROUP RUN
+
+In order to support updatable  and long running collections `tegracli` sports an *account group* feature which retrieves
+the history of a given set of accounts and is able to retrieve updates on each of these accounts.
+
+Groups are initialized by calling `teracli group init`, where accounts to track are stated by either stating them as arguments
+or by reading in a file.
+
+### Account Group File Format
+
+Account files are expected to follow these requirements:
+
+- UTF8 text document,
+- per line one accout, given as either username, channel-URL or ID,
+- there shall be no header no additional columns
+
+```
+Usage: tegracli group init [OPTIONS] NAME [ACCOUNTS]...
+
+  initialize a new account group
+
+Options:
+  -f, --read_file PATH         read an account list from a file, one
+                               handle/id/url per line.
+  -s, --start_date [%Y-%m-%d]  Start date for the collection. Must be in YYYY-
+                               MM-DD format.
+  -l, --limit INTEGER          number of posts fo retrieve in one run
+  --help                       Show this message and exit.
+```
+
+A group is essentially a directory in your tegracli project folder which holdes
+an group configuration file, a `profiles.jsonl` file which will collect all user objects returned
+by Telegram (these will be recycled to save API requests), as well as the jsonl-files containing the messages.
+The messages-files are structured in a way that one file holds the messages of one account and is named by the
+account's ID.
+
+An exemplary project could look this:
+
+```
+tegracli-project/
+ |- tegracli.conf.yml
+ |- mysession.session
+ |- my_group/
+    |- tegracli_group.conf.yml
+    |- profiles.jsonl
+    |- 10000001.jsonl
+    |- 10000002.jsonl
+```
+To run the project command your terminal to `tegracli group run my_group` to collect the latest post of the accounts you want to track.
+
+```
+Usage: tegracli group run [OPTIONS] [GROUPS]...
+
+  load a group configuration and run the groups operations
 ```
 
 ## Result File Format
