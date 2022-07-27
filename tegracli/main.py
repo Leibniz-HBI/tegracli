@@ -5,17 +5,21 @@
 import re
 import sys
 from datetime import datetime
+from functools import partial
+from io import TextIOWrapper
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 
 import click
+import telethon
+import ujson
 import yaml
 from loguru import logger as log
 from telethon import TelegramClient
 
-from .dispatch import dispatch_get, dispatch_search
+from .dispatch import dispatch_get, dispatch_iter_messages, dispatch_search
 from .group import Group
-from .utilities import ensure_authentication, get_client
+from .utilities import ensure_authentication, get_client, str_dict
 
 
 @click.group()
@@ -143,11 +147,13 @@ def group():
     type=click.DateTime(["%Y-%m-%d"]),
     help="Start date for the collection. Must be in YYYY-MM-DD format.",
 )
+@click.option("--limit", "-l", type=int, help="number of posts fo retrieve in one run")
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
 def init(
     read_file: str,
     start_date: datetime,
+    limit: int,
     name: str,
     accounts: List[str],
 ):
@@ -155,7 +161,7 @@ def init(
     cwd = Path()
     results_directory = cwd / name
     group_conf_file = results_directory / "tegracli_group.conf.yml"
-    params = {"limit": 0, "reverse": True}
+    params = {"limit": limit, "reverse": True}
     if start_date is not None:
         params["offset_date"] = start_date  # type: ignore
     # check whether the directory we try to create is already there.
@@ -180,7 +186,7 @@ def init(
             for line in file.readlines():
                 line = str(line)
                 # test whether `line` is a valid id|handle|url
-                for match in re.finditer(r"\d+", line):
+                for match in re.finditer(r"[\w\d]+", line):
                     matched_line = match.group(0)
                     log.debug(f"Found {matched_line}.")
                     accounts.append(matched_line)
@@ -188,10 +194,110 @@ def init(
     log.debug(f"Found these accounts: {', '.join(accounts)}")
 
     if len(accounts) >= 1:
-        results_directory.mkdir()
         _group = Group(accounts, name, params)
         with group_conf_file.open("w") as file:
             yaml.dump(_group, file)
+
+
+@group.command()
+@click.argument("groups", nargs=-1)
+@click.pass_context
+def run(ctx: click.Context, groups: Tuple[str]):
+    """load a group configuration and run the groups operations"""
+    run_group(ctx.obj["client"], groups)
+
+
+def run_group(client: TelegramClient, groups: Tuple[str]):
+    """runs the required operations for the specified groups."""
+    cwd = Path()
+
+    if len(groups) >= 1:
+        _groups = list(groups) if isinstance(groups, tuple) else groups
+        # iterate groups
+        for group_name in _groups:
+            conf = _guarded_group_load(cwd, group_name)
+
+            # iterate over group members
+            for member in conf.members:
+                # check whether member is known already and, thus, present in profiles.jsonl
+                # if (yes
+                #   load user object
+                profile = conf.get_member_profile(member)
+                # if (no)
+                if profile is None:
+                    #   load user object from TG and save it to profiles.jsonl
+                    profile: Dict = client.loop.run_until_complete(
+                        _get_profile(client, member, group_name)
+                    )
+                    #   check whether the member was specified by a handle
+                    #   if (yes)
+                    if not str.isnumeric(member):
+                        #       replace handle by ID
+                        index = conf.members.index(member)
+                        conf.members[index] = profile["id"]
+                        member = profile["id"]
+                        with (Path(group_name) / "tegracli_group.conf.yml").open(
+                            "w"
+                        ) as file:
+                            yaml.dump(conf, file)
+
+                async def _get_input_entity(client: TelegramClient, member_id: int):
+                    return await client.get_input_entity(member_id)
+
+                # get the input_entity from telethon
+                entity = client.loop.run_until_complete(
+                    _get_input_entity(client, int(member))
+                )
+
+                async def _handle_message(
+                    message: telethon.types.Message, file: TextIOWrapper
+                ):
+                    log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
+                    ujson.dump(str_dict(message.to_dict()), file)
+                    file.write("\n")
+
+                # check whether a jsonl-file for this member exists
+                # if (yes)
+                #   iterate over lines in file and get the highest message.id
+                #   modify `params`-dict accordingly
+                _params = conf.get_params(
+                    min_id=conf.get_last_message_for(member), entity=entity
+                )
+                log.debug(f"Request with the following parameters: {_params}")
+
+                # request data from telethon and write to disk
+                with (Path(group_name) / (member + ".jsonl")).open("a") as member_file:
+                    client.loop.run_until_complete(
+                        dispatch_iter_messages(
+                            client,
+                            params=_params,
+                            callback=partial(_handle_message, file=member_file),
+                        )
+                    )
+            # done.
+
+    else:
+        log.info("No group specified.")
+
+
+async def _get_profile(client: TelegramClient, member: str, group_name: str):
+    _member = int(member) if str.isnumeric(member) else member
+    profile = await client.get_entity(_member)
+    p_dict = str_dict(profile.to_dict())
+    with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
+        ujson.dump(p_dict, profiles)
+        profiles.write("\n")
+
+    return p_dict
+
+
+def _guarded_group_load(cwd: Path, _name: str) -> Group:
+    group_conf_fil = cwd / _name / "tegracli_group.conf.yml"
+    if not group_conf_fil.exists():
+        log.error(f"Unknown group {_name}. Aborting.")
+        sys.exit(127)
+    with group_conf_fil.open("r") as file:
+        return yaml.full_load(file)
 
 
 @cli.command()
