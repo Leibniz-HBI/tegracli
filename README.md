@@ -115,7 +115,7 @@ Account files are expected to follow these requirements:
 
 - UTF8 text document,
 - per line one accout, given as either username, channel-URL or ID,
-- there shall be no header no additional columns
+- there shall be no header and  no additional columns
 
 ```
 Usage: tegracli group init [OPTIONS] NAME [ACCOUNTS]...
