@@ -90,9 +90,9 @@ async def dispatch_search(queries: list[str], client: TelegramClient):
             async for message in client.iter_messages(None, search=query, limit=15):
                 with Path(f"{query}.jsonl").open("a", encoding="utf8") as file:
                     m_dict = message.to_dict()
-                    ujson.dump(
+                    ujson.dump(  # pylint: disable=c-extension-no-member
                         str_dict(m_dict), file
-                    )  # pylint: disable=c-extension-no-member
+                    )
                     file.write("\n")
         except ValueError as error:
             log.error(f"No dice for {query}, because {error}")
