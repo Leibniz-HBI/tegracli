@@ -1,25 +1,40 @@
 """Utility functions for tegracli
 """
 import datetime
-from typing import Dict
+from functools import singledispatch
+from typing import Any, Dict, Union
 
 from telethon import TelegramClient
 
 from .types import AuthenticationHandler
 
 
+@singledispatch
 def str_dict(data):
     """Utility function to recursively convert all values in the data dict to strings."""
-    if isinstance(data, dict):
-        return {k: str_dict(v) for (k, v) in data.items()}
-    if isinstance(data, list):
-        return [str_dict(v) for v in data]
-    if isinstance(data, datetime.datetime):
-        return data.strftime("%Y-%m-%d %H:%M:%S")
-    if isinstance(data, bytes):
-        print(f"Found bytes in {data}")
-        return data.decode("utf8")
     return data
+
+
+@str_dict.register(dict)
+def _(data: Dict[str, Any]) -> Dict[str, Union[Any, str]]:
+    return {k: str_dict(v) for (k, v) in data.items()}
+
+
+@str_dict.register(list)
+def _(data: list) -> list:
+    return [str_dict(v) for v in data]
+
+
+@str_dict.register(datetime.datetime)
+def _(data: datetime.datetime) -> str:
+    return data.strftime("%Y-%m-%d %H:%M:%S")
+
+
+@str_dict.register(bytes)
+def _(data: bytes) -> str:
+    _data = data.decode("utf8")
+    print(f"Found bytes in {_data}")
+    return _data
 
 
 def get_client(conf: Dict) -> TelegramClient:
