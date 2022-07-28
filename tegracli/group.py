@@ -20,7 +20,7 @@ class Group(yaml.YAMLObject):
         super().__init__()
 
         self.members = members or []
-        self.unreachable_members = []
+        self.unreachable_members: List[str] = []
         self.name = name or "new_group"
         self.params = params or {}
 
@@ -55,7 +55,9 @@ class Group(yaml.YAMLObject):
         """
         with self._profiles_path.open("r") as profiles:
             for line in profiles.readlines():
-                record = ujson.loads(line)  # pylint: disable=c-extension-no-member
+                record: Dict[str, str] = ujson.loads(
+                    line
+                )  # pylint: disable=c-extension-no-member
                 if record.get("id") == member or record.get("username") == member:
                     return record
         return None

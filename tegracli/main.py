@@ -287,7 +287,8 @@ def _guarded_group_load(cwd: Path, _name: str) -> Group:
         log.error(f"Unknown group {_name}. Aborting.")
         sys.exit(127)
     with group_conf_fil.open("r") as file:
-        return yaml.full_load(file)
+        _group: Group = yaml.full_load(file)
+        return _group
 
 
 @cli.command()

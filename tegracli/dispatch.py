@@ -141,7 +141,7 @@ async def get_profile(
     except ValueError:
         log.warning(f"Entity for {member} was not found.")
         return None
-    p_dict = str_dict(profile.to_dict())
+    p_dict: Dict[str, str] = str_dict(profile.to_dict())
     with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
         ujson.dump(p_dict, profiles)
         profiles.write("\n")
