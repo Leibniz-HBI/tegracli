@@ -3,8 +3,9 @@
 import datetime
 import time
 from functools import partial
+from io import TextIOWrapper
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import telethon
 import ujson
@@ -97,3 +98,65 @@ async def dispatch_search(queries: list[str], client: TelegramClient):
         except ValueError as error:
             log.error(f"No dice for {query}, because {error}")
             continue
+
+
+async def handle_message(message: telethon.types.Message, file: TextIOWrapper):
+    """Accept incoming messages and log them to disk
+
+    Parameters
+    ----------
+
+    message : telethon.types.Message : incoming single message
+    file : TextIOWrapper : opened file to dump the message's json into
+
+    Returns
+    -------
+
+    None : nada, nothing
+    """
+    log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
+    ujson.dump(str_dict(message.to_dict()), file)
+    file.write("\n")
+
+
+async def get_input_entity(
+    client: TelegramClient, member_id: int
+) -> Optional[telethon.types.TypeInputPeer]:
+    """wraps the client.get_input_entity function
+
+    Parameters
+    ----------
+
+    client : TelegramClient : signed in TG client
+    member_id : int : id/handle/URL of the entity to get
+
+    Returns
+    -------
+    Optional[telethon.types.TypeInputPeer] : returns the requested entity or None
+    """
+    return await client.get_input_entity(member_id)
+
+
+async def get_profile(
+    client: TelegramClient, member: str, group_name: str
+) -> Optional[Dict]:
+    """Returns a Dict from the requested entity
+
+    Parameters
+    ----------
+
+    client : TelegramClient : signed in TG client
+    member : str : id/handle/URL of the entity to request
+    """
+    _member = int(member) if str.isnumeric(member) else member
+    try:
+        profile = await client.get_entity(_member)
+    except ValueError:
+        log.warning(f"Entity for {member} was not found.")
+        return None
+    p_dict = str_dict(profile.to_dict())
+    with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
+        ujson.dump(p_dict, profiles)
+        profiles.write("\n")
+
+    return p_dict

@@ -6,20 +6,24 @@ import re
 import sys
 from datetime import datetime
 from functools import partial
-from io import TextIOWrapper
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 import click
-import telethon
-import ujson
 import yaml
 from loguru import logger as log
 from telethon import TelegramClient
 
-from .dispatch import dispatch_get, dispatch_iter_messages, dispatch_search
+from .dispatch import (
+    dispatch_get,
+    dispatch_iter_messages,
+    dispatch_search,
+    get_input_entity,
+    get_profile,
+    handle_message,
+)
 from .group import Group
-from .utilities import ensure_authentication, get_client, str_dict
+from .utilities import ensure_authentication, get_client
 
 
 @click.group()
@@ -227,7 +231,7 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                 if profile is None:
                     #   load user object from TG and save it to profiles.jsonl
                     profile: Dict = client.loop.run_until_complete(
-                        _get_profile(client, member, group_name)
+                        get_profile(client, member, group_name)
                     )
                     #   check whether the member was specified by a handle
                     #   if (yes)
@@ -241,20 +245,10 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                         ) as file:
                             yaml.dump(conf, file)
 
-                async def _get_input_entity(client: TelegramClient, member_id: int):
-                    return await client.get_input_entity(member_id)
-
                 # get the input_entity from telethon
                 entity = client.loop.run_until_complete(
-                    _get_input_entity(client, int(member))
+                    get_input_entity(client, int(member))
                 )
-
-                async def _handle_message(
-                    message: telethon.types.Message, file: TextIOWrapper
-                ):
-                    log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
-                    ujson.dump(str_dict(message.to_dict()), file)
-                    file.write("\n")
 
                 # check whether a jsonl-file for this member exists
                 # if (yes)
@@ -271,24 +265,13 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                         dispatch_iter_messages(
                             client,
                             params=_params,
-                            callback=partial(_handle_message, file=member_file),
+                            callback=partial(handle_message, file=member_file),
                         )
                     )
             # done.
 
     else:
         log.info("No group specified.")
-
-
-async def _get_profile(client: TelegramClient, member: str, group_name: str):
-    _member = int(member) if str.isnumeric(member) else member
-    profile = await client.get_entity(_member)
-    p_dict = str_dict(profile.to_dict())
-    with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
-        ujson.dump(p_dict, profiles)
-        profiles.write("\n")
-
-    return p_dict
 
 
 def _guarded_group_load(cwd: Path, _name: str) -> Group:
