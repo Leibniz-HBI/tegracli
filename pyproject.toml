@@ -2,7 +2,16 @@
 name = "tegracli"
 version = "0.1.1-alpha.0"
 description = "A research-focused Telegram CLI application"
-authors = ["Philipp Kessling"]
+authors = ["Philipp Kessling <p.kessling@leibniz-hbi.de", "Felix Münch <f.muench@lebniz-hbi.de"]
+readme  = "README.md"
+license = "MIT"
+repository  = "https://github.com/Leibniz-HBI/tegracli"
+website = "https://pypi.org/project/tegracli/"
+classifiers = [
+		"Development Status :: 3 - Alpha",
+		"Environment :: Console",
+		"Intended Audience :: Science/Research",
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
