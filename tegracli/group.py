@@ -20,6 +20,7 @@ class Group(yaml.YAMLObject):
         super().__init__()
 
         self.members = members or []
+        self.unreachable_members = []
         self.name = name or "new_group"
         self.params = params or {}
 
@@ -40,7 +41,7 @@ class Group(yaml.YAMLObject):
     def _conf_path(self) -> Path:
         return self._group_dir / CONF_FILE_NAME
 
-    def get_member_profile(self, member: str) -> Optional[Dict]:
+    def get_member_profile(self, member: str) -> Optional[Dict[str, str]]:
         """loads a user profile from disk
 
         Parameters
@@ -59,7 +60,7 @@ class Group(yaml.YAMLObject):
                     return record
         return None
 
-    def get_params(self, **kwargs):
+    def get_params(self, **kwargs) -> Dict:
         """return an pimped params dict"""
         return dict(self.params, **kwargs)
 

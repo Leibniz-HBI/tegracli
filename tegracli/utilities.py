@@ -8,17 +8,18 @@ from telethon import TelegramClient
 from .types import AuthenticationHandler
 
 
-def str_dict(input_dict: Dict) -> Dict:
-    """Utility function to recursively convert all values in the input dict to strings."""
-    if isinstance(input_dict, dict):
-        return {k: str_dict(v) for (k, v) in input_dict.items()}
-    if input_dict is None:
-        return input_dict
-    if isinstance(input_dict, list):
-        return [str_dict(v) for v in input_dict]
-    if isinstance(input_dict, datetime.datetime):
-        return input_dict.strftime("%Y-%m-%d %H:%M:%S")
-    return str(input_dict)
+def str_dict(data):
+    """Utility function to recursively convert all values in the data dict to strings."""
+    if isinstance(data, dict):
+        return {k: str_dict(v) for (k, v) in data.items()}
+    if isinstance(data, list):
+        return [str_dict(v) for v in data]
+    if isinstance(data, datetime.datetime):
+        return data.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(data, bytes):
+        print(f"Found bytes in {data}")
+        return data.decode("utf8")
+    return data
 
 
 def get_client(conf: Dict) -> TelegramClient:

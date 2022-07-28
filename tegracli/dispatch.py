@@ -34,23 +34,6 @@ async def dispatch_iter_messages(
 async def dispatch_get(users, client: TelegramClient, params: Dict):
     """get the message history of a specified set of users."""
 
-    async def handle_channel_message(
-        message: telethon.types.Message,
-        path: Path,
-        other: telethon.types.Channel,
-        o_dict: Dict,
-    ):
-        log.debug(f"Received: {other.username}-{message.id}")
-        with path.open("a", encoding="utf8") as file:
-            m_dict = message.to_dict()
-            m_dict["user"] = o_dict
-            ujson.dump(str_dict(m_dict), file)  # pylint: disable=c-extension-no-member
-            file.write("\n")
-
-    local_account = await client.get_me()
-
-    log.info(f"Using telegram account of {local_account.username}")
-
     for user in users:
         done = False
         while done is False:
@@ -58,18 +41,15 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
                 if str.isnumeric(user):
                     user = int(user)
                 other = await client.get_entity(user)  # see https://limits.tginfo.me/en
-                o_dict = other.to_dict()
-                get_message_handler = partial(
-                    handle_channel_message,
-                    path=Path(f"{other.id}.jsonl"),
-                    other=other,
-                    o_dict=o_dict,
-                )
-
+                o_dict = str_dict(other.to_dict())
                 _params = params.copy()
                 _params["entity"] = other
-
-                await dispatch_iter_messages(client, _params, get_message_handler)
+                with Path(f"{other.id}.jsonl").open("a", encoding="utf8") as file:
+                    await dispatch_iter_messages(
+                        client,
+                        _params,
+                        partial(handle_message, file=file, injects={"user": o_dict}),
+                    )
             except FloodWaitError as err:
                 delta = datetime.timedelta(seconds=err.seconds)
                 log.error(f"FloodWaitError occurred. Waiting for {delta} to resume.")
@@ -100,7 +80,9 @@ async def dispatch_search(queries: list[str], client: TelegramClient):
             continue
 
 
-async def handle_message(message: telethon.types.Message, file: TextIOWrapper):
+async def handle_message(
+    message: telethon.types.Message, file: TextIOWrapper, injects: Optional[Dict]
+):
     """Accept incoming messages and log them to disk
 
     Parameters
@@ -115,7 +97,12 @@ async def handle_message(message: telethon.types.Message, file: TextIOWrapper):
     None : nada, nothing
     """
     log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
-    ujson.dump(str_dict(message.to_dict()), file)
+    m_dict = str_dict(message.to_dict())
+    if injects is not None:
+        for key, value in injects.items():
+            m_dict[key] = value
+    print(str(m_dict))
+    ujson.dump(m_dict, file, ensure_ascii=True)
     file.write("\n")
 
 
@@ -139,7 +126,7 @@ async def get_input_entity(
 
 async def get_profile(
     client: TelegramClient, member: str, group_name: str
-) -> Optional[Dict]:
+) -> Optional[Dict[str, str]]:
     """Returns a Dict from the requested entity
 
     Parameters

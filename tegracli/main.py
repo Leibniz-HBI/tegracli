@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import click
 import yaml
@@ -216,7 +216,7 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
     cwd = Path()
 
     if len(groups) >= 1:
-        _groups = list(groups) if isinstance(groups, tuple) else groups
+        _groups = list(groups)
         # iterate groups
         for group_name in _groups:
             conf = _guarded_group_load(cwd, group_name)
@@ -230,12 +230,17 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                 # if (no)
                 if profile is None:
                     #   load user object from TG and save it to profiles.jsonl
-                    profile: Dict = client.loop.run_until_complete(
+                    profile = client.loop.run_until_complete(
                         get_profile(client, member, group_name)
                     )
+                    # check whether profile is also unknown to TG
+                    if profile is None:
+                        index = conf.members.index(member)
+                        conf.members.pop(index)
+                        conf.unreachable_members.append(member)
                     #   check whether the member was specified by a handle
                     #   if (yes)
-                    if not str.isnumeric(member):
+                    elif not str.isnumeric(member):
                         #       replace handle by ID
                         index = conf.members.index(member)
                         conf.members[index] = profile["id"]
@@ -265,7 +270,9 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                         dispatch_iter_messages(
                             client,
                             params=_params,
-                            callback=partial(handle_message, file=member_file),
+                            callback=partial(
+                                handle_message, file=member_file, injects=None
+                            ),
                         )
                     )
             # done.
