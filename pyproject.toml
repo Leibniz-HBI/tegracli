@@ -6,7 +6,7 @@ authors = ["Philipp Kessling <p.kessling@leibniz-hbi.de", "Felix Münch <f.muenc
 readme  = "README.md"
 license = "MIT"
 repository  = "https://github.com/Leibniz-HBI/tegracli"
-website = "https://pypi.org/project/tegracli/"
+homepage = "https://pypi.org/project/tegracli/"
 classifiers = [
 		"Development Status :: 3 - Alpha",
 		"Environment :: Console",
