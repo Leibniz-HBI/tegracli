@@ -32,8 +32,7 @@ def _(data: datetime.datetime) -> str:
 
 @str_dict.register(bytes)
 def _(data: bytes) -> str:
-    _data = data.decode("utf8")
-    return _data
+    return str(data)
 
 
 def get_client(conf: Dict) -> TelegramClient:
