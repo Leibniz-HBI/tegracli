@@ -17,8 +17,7 @@ def str_dict(data):
     if isinstance(data, datetime.datetime):
         return data.strftime("%Y-%m-%d %H:%M:%S")
     if isinstance(data, bytes):
-        print(f"Found bytes in {data}")
-        return data.decode("utf8")
+        return str(data)
     return data
 
 
