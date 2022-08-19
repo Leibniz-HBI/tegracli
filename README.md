@@ -1,6 +1,6 @@
 # tegracli
 
-![alt text](https://github.com/Leibniz-HBI/tegracli/blob/trunk/tegracli.png?raw=true)
+![The TEGRACLI logo](https://github.com/Leibniz-HBI/tegracli/blob/trunk/tegracli.png?raw=true)
 
 A convenience wrapper around Telethon and the Telegram Client API for research purposes.
 
