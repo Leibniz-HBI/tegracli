@@ -24,9 +24,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           poetry install --no-interaction --no-root
-          poetry shell
       - name: Test with pytest
-        run: pytest --cov-report html:coverage-${{ matrix.python-version }} --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+        run: poetry run pytest --cov-report html:coverage-${{ matrix.python-version }} --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
         with:
