@@ -6,7 +6,7 @@ A convenience wrapper around Telethon and the Telegram Client API for research p
 
 # Installation Instructions
 
-`tegracli` uses Poetry and python >= 3.9 for building and installing.
+`tegracli` uses Poetry and python >= 3.9 < 4.0 for building and installing.
 
 To install using pipx, run the following command `pipx install tegracli`.
 
