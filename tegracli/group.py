@@ -54,7 +54,7 @@ class Group(yaml.YAMLObject):
         Dict or None : user profile. if none is found returns None
         """
         with self._profiles_path.open("r") as profiles:
-            for line in profiles.readlines():
+            for line in profiles:
                 record: Dict[str, str] = ujson.loads(
                     line
                 )  # pylint: disable=c-extension-no-member
@@ -66,7 +66,7 @@ class Group(yaml.YAMLObject):
         """return an pimped params dict"""
         return dict(self.params, **kwargs)
 
-    def get_last_message_for(self, member: str) -> int:
+    def get_last_message_for(self, member: str) -> Optional[int]:
         """retrieves the last message for a member"""
         member_path = self._group_dir / (member + ".jsonl")
         if member_path.exists():
@@ -75,11 +75,11 @@ class Group(yaml.YAMLObject):
                     int(
                         ujson.loads(line)["id"]
                     )  # pylint: disable=c-extension-no-member
-                    for line in file.readlines()
+                    for line in file
                 ]
                 if len(ids) != 0:
                     return max(ids)
-        return 1
+        return None
 
     def dump(self):
         """dump the configuration to disk"""

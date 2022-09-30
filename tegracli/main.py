@@ -164,7 +164,6 @@ def init(
     """initialize a new account group"""
     cwd = Path()
     results_directory = cwd / name
-    group_conf_file = results_directory / "tegracli_group.conf.yml"
     params = {"limit": limit, "reverse": True}
     if start_date is not None:
         params["offset_date"] = start_date  # type: ignore
@@ -187,7 +186,7 @@ def init(
             sys.exit(127)
 
         with _read_file.open("r", encoding="utf8") as file:
-            for line in file.readlines():
+            for line in file:
                 line = str(line)
                 # test whether `line` is a valid id|handle|url
                 for match in re.finditer(r"[\w\d]+", line):
@@ -199,8 +198,7 @@ def init(
 
     if len(accounts) >= 1:
         _group = Group(accounts, name, params)
-        with group_conf_file.open("w") as file:
-            yaml.dump(_group, file)
+        _group.dump()
 
 
 @group.command()
@@ -238,17 +236,15 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                         index = conf.members.index(member)
                         conf.members.pop(index)
                         conf.unreachable_members.append(member)
+                        continue  # skip this user and commence with the next one
                     #   check whether the member was specified by a handle
                     #   if (yes)
-                    elif not str.isnumeric(member):
+                    if not str.isnumeric(member):
                         #       replace handle by ID
                         index = conf.members.index(member)
                         conf.members[index] = profile["id"]
                         member = profile["id"]
-                        with (Path(group_name) / "tegracli_group.conf.yml").open(
-                            "w"
-                        ) as file:
-                            yaml.dump(conf, file)
+                        conf.dump()
 
                 # get the input_entity from telethon
                 entity = client.loop.run_until_complete(
@@ -259,9 +255,12 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                 # if (yes)
                 #   iterate over lines in file and get the highest message.id
                 #   modify `params`-dict accordingly
-                _params = conf.get_params(
-                    min_id=conf.get_last_message_for(member), entity=entity
-                )
+                _params = conf.get_params(entity=entity)
+                # Only set the ``min_id`` parameter if a file is existent for the user
+                min_id = conf.get_last_message_for(member)
+                if min_id is not None:
+                    _params["min_id"] = min_id
+
                 log.debug(f"Request with the following parameters: {_params}")
 
                 # request data from telethon and write to disk
