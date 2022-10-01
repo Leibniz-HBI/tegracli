@@ -141,8 +141,8 @@ async def get_profile(
     except ValueError:
         log.warning(f"Entity for {member} was not found.")
         return None
-    except telethon.errors.rpcerrorlist.ChannelPrivateError:
-        log.warning(f"Channel {member} is private. Skipping.")
+    except telethon.errors.RPCError as error:
+        log.warning(f"Error for channel {member}. {error.message}. Skipping.")
         return None
     p_dict: Dict[str, str] = str_dict(profile.to_dict())
     with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
