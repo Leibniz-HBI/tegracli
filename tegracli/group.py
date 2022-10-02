@@ -53,12 +53,13 @@ class Group(yaml.YAMLObject):
         -------
         Dict or None : user profile. if none is found returns None
         """
+        _member = int(member) if str.isnumeric(member) else member
         with self._profiles_path.open("r") as profiles:
             for line in profiles:
                 record: Dict[str, str] = ujson.loads(
                     line
                 )  # pylint: disable=c-extension-no-member
-                if record.get("id") == member or record.get("username") == member:
+                if record.get("id") == _member or record.get("username") == _member:
                     return record
         return None
 

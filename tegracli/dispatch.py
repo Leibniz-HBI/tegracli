@@ -101,7 +101,7 @@ async def handle_message(
     if injects is not None:
         for key, value in injects.items():
             m_dict[key] = value
-    print(str(m_dict))
+    # print(str(m_dict))
     ujson.dump(m_dict, file, ensure_ascii=True)
     file.write("\n")
 
