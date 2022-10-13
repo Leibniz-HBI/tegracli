@@ -96,7 +96,7 @@ async def handle_message(
 
     None : nada, nothing
     """
-    log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
+    # log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
     m_dict = str_dict(message.to_dict())
     if injects is not None:
         for key, value in injects.items():
@@ -136,14 +136,7 @@ async def get_profile(
     member : str : id/handle/URL of the entity to request
     """
     _member = int(member) if str.isnumeric(member) else member
-    try:
-        profile = await client.get_entity(_member)
-    except ValueError:
-        log.warning(f"Entity for {member} was not found.")
-        return None
-    except telethon.errors.RPCError as error:
-        log.warning(f"Error for channel {member}. {error.message}. Skipping.")
-        return None
+    profile = await client.get_entity(_member)
     p_dict: Dict[str, str] = str_dict(profile.to_dict())
     with (Path(group_name) / "profiles.jsonl").open("a") as profiles:
         ujson.dump(p_dict, profiles)

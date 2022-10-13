@@ -20,7 +20,7 @@ class Group(yaml.YAMLObject):
         super().__init__()
 
         self.members = members or []
-        self.unreachable_members: List[str] = []
+        self.unreachable_members: List[Dict[str, str]] = []
         self.name = name or "new_group"
         self.params = params or {}
 
@@ -53,7 +53,10 @@ class Group(yaml.YAMLObject):
         -------
         Dict or None : user profile. if none is found returns None
         """
-        _member = int(member) if str.isnumeric(member) else member
+        _member = (
+            int(member) if str.isnumeric(member) else member
+        )  # cast id to int, so telethon
+        # retrieves it from it's DB rather then bothering telegram's API.
         with self._profiles_path.open("r") as profiles:
             for line in profiles:
                 record: Dict[str, str] = ujson.loads(
@@ -81,6 +84,17 @@ class Group(yaml.YAMLObject):
                 if len(ids) != 0:
                     return max(ids)
         return None
+
+    def retry_all_unreachable(self):
+        """put all unreachable accounts back into the active members"""
+        self.members = [*self.members, *self.unreachable_members]
+        self.unreachable_members = []
+
+    def mark_member_unreachable(self, member: str, reason: str) -> None:
+        """move a member to the unreachable list"""
+        if member in self.members:
+            self.members.remove(member)
+            self.unreachable_members.append({"member": member, "reason": reason})
 
     def dump(self):
         """dump the configuration to disk"""

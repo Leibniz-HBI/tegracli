@@ -2,6 +2,7 @@
 
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
+import atexit
 import re
 import sys
 from datetime import datetime
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import click
+import telethon
 import yaml
 from loguru import logger as log
 from telethon import TelegramClient
@@ -24,6 +26,8 @@ from .dispatch import (
 )
 from .group import Group
 from .utilities import ensure_authentication, get_client
+
+atexit.register(lambda: log.debug("Terminating."))
 
 
 @click.group()
@@ -203,6 +207,17 @@ def init(
 
 @group.command()
 @click.argument("groups", nargs=-1)
+def reset(groups: Tuple[str]):
+    """reset unreachable members for each group"""
+    for _group in groups:
+        cwd = Path()
+        conf = _guarded_group_load(cwd, _group)
+        conf.retry_all_unreachable()
+        conf.dump()
+
+
+@group.command()
+@click.argument("groups", nargs=-1)
 @click.pass_context
 def run(ctx: click.Context, groups: Tuple[str]):
     """load a group configuration and run the groups operations"""
@@ -220,37 +235,53 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
             conf = _guarded_group_load(cwd, group_name)
 
             # iterate over group members
-            for member in conf.members:
+            for index, member in enumerate(conf.members):
                 # check whether member is known already and, thus, present in profiles.jsonl
                 # if (yes
                 #   load user object
                 profile = conf.get_member_profile(member)
                 # if (no)
                 if profile is None:
-                    #   load user object from TG and save it to profiles.jsonl
-                    profile = client.loop.run_until_complete(
-                        get_profile(client, member, group_name)
-                    )
-                    # check whether profile is also unknown to TG
+                    try:
+                        #   load user object from TG and save it to profiles.jsonl
+                        profile = client.loop.run_until_complete(
+                            get_profile(client, member, group_name)
+                        )
+                    except ValueError:
+                        log.warning(f"Entity for {member} was not found.")
+                        conf.mark_member_unreachable(member, "ValueError")
+                        continue
+                    except telethon.errors.RPCError as error:
+                        log.warning(
+                            f"Error for channel {member}. {error.message}. Skipping."
+                        )
+                        conf.mark_member_unreachable(
+                            member, error.message or "RPCError"
+                        )
+                        continue
                     if profile is None:
-                        index = conf.members.index(member)
-                        conf.members.pop(index)
-                        conf.unreachable_members.append(member)
-                        continue  # skip this user and commence with the next one
+                        conf.mark_member_unreachable(member, "Unknown")
+                        continue
+                    # check whether profile is also unknown to TG
                     #   check whether the member was specified by a handle
                     #   if (yes)
-                    if not str.isnumeric(member):
-                        #       replace handle by ID
-                        index = conf.members.index(member)
-                        conf.members[index] = profile["id"]
-                        member = profile["id"]
-                        conf.dump()
+                if not str.isnumeric(member):
+                    #       replace handle by ID
+                    index = conf.members.index(member)
+                    conf.members[index] = str(profile["id"])
+                    member = str(profile["id"])
+                    conf.dump()
 
                 # get the input_entity from telethon
-                entity = client.loop.run_until_complete(
-                    get_input_entity(client, int(member))
-                )
-
+                try:
+                    entity = client.loop.run_until_complete(
+                        get_input_entity(client, int(member))
+                    )
+                except ValueError:
+                    log.warning(
+                        f"Input entity for {member} not found. Skipping for now."
+                    )
+                    continue
                 # check whether a jsonl-file for this member exists
                 # if (yes)
                 #   iterate over lines in file and get the highest message.id
@@ -264,17 +295,28 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
                 log.debug(f"Request with the following parameters: {_params}")
 
                 # request data from telethon and write to disk
-                with (Path(group_name) / (member + ".jsonl")).open("a") as member_file:
-                    client.loop.run_until_complete(
-                        dispatch_iter_messages(
-                            client,
-                            params=_params,
-                            callback=partial(
-                                handle_message, file=member_file, injects=None
-                            ),
+                try:
+                    with (Path(group_name) / (member + ".jsonl")).open(
+                        "a"
+                    ) as member_file:
+                        client.loop.run_until_complete(
+                            dispatch_iter_messages(
+                                client,
+                                params=_params,
+                                callback=partial(
+                                    handle_message, file=member_file, injects=None
+                                ),
+                            )
                         )
+                except telethon.errors.ChannelPrivateError:
+                    log.error(
+                        f"channel {profile.get('title') or ''} is private. Skipping."
                     )
+                log.debug(
+                    f"Done with {profile.get('title') or ''}. {index / len(conf.members) * 100}%"
+                )
             # done.
+            log.info(f"Done with group {group_name}.")
 
     else:
         log.info("No group specified.")
