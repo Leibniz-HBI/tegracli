@@ -1,9 +1,8 @@
-""" # Command Line Interface Tests
+"""Command Line Interface Tests.
 
 This test suite tests the program's CLICK interface.
 
 Tests should be run with click.CliRunner.
-
 """
 
 # pylint: disable=redefined-outer-name
@@ -26,7 +25,7 @@ from tegracli.main import cli
 
 @pytest.fixture
 def group_config() -> Path:
-    """get a path to a valid group config"""
+    """Get a path to a valid group config."""
     with Path("tests/.stubs/tegracli_group.conf.yml").open(
         "r", encoding="utf8"
     ) as file:
@@ -35,12 +34,12 @@ def group_config() -> Path:
 
 @pytest.fixture
 def runner():
-    """Fixture for click.CliRunner"""
+    """Fixture for click.CliRunner."""
     return CliRunner()
 
 
 def test_help_prompt(runner: CliRunner, tmpdir: Path):
-    """Should show help if no args present"""
+    """Should show help if no args present."""
     with runner.isolated_filesystem(tmpdir):
         result = runner.invoke(cli, ["--help"])
 
@@ -49,7 +48,7 @@ def test_help_prompt(runner: CliRunner, tmpdir: Path):
 
 
 def test_configuration_present(runner: CliRunner, tmp_path: Path):
-    """Should not throw if a configuration file is present"""
+    """Should not throw if a configuration file is present."""
     with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
 
         conf_file = Path(temp_dir) / "tegracli.conf.yml"
@@ -72,7 +71,7 @@ def test_configuration_present(runner: CliRunner, tmp_path: Path):
 
 
 def test_configuration_missing(runner: CliRunner, tmpdir: Path):
-    """Should fail if no config is present in the current directory"""
+    """Should fail if no config is present in the current directory."""
     with runner.isolated_filesystem(tmpdir):
         result = runner.invoke(cli, ["get", "channel"])
         print(result.stdout)
@@ -80,14 +79,15 @@ def test_configuration_missing(runner: CliRunner, tmpdir: Path):
 
 
 def test_account_group_creation(runner: CliRunner, tmp_path: Path):
-    """Should create a directory named by user input, read in a file with tg-accounts,
+    """Should create a group.
+
+    For this it must create a directory named by user input, read in a file with tg-accounts,
     resolve those user names and save messages by user in a jsonl-file.
 
     I.e. a call to this command would look like this:
     `tegracli group init --read_file account_list.csv my_little_account_list` to
     load a account list from a file and write the configuration file to disk.
     """
-
     with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
         conf_file = Path(temp_dir) / "tegracli.conf.yml"
         list_file = Path(temp_dir) / "account_list.csv"
@@ -130,14 +130,15 @@ def test_account_group_creation(runner: CliRunner, tmp_path: Path):
 
 
 def test_account_group_run(runner: CliRunner, group_config: Path, tmp_path: Path):
-    """Should create a directory named by user input, read in a file with tg-accounts,
+    """Should run a group.
+
+    It must create a directory named by user input, read in a file with tg-accounts,
     resolve those user names and save messages by user in a jsonl-file.
 
     I.e. a call to this command would look like this:
     `tegracli group init --read_file account_list.csv my_little_account_list` to
     load a account list from a file and write the configuration file to disk.
     """
-
     with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
         conf_file = Path(temp_dir) / "tegracli.conf.yml"
         r_folder = Path(temp_dir) / "behoerden/"
@@ -170,12 +171,25 @@ def test_account_group_run(runner: CliRunner, group_config: Path, tmp_path: Path
         assert result.exit_code == 0  # indicating success?
 
 
-def test_search(runner: CliRunner):
-    """Should get search results for specified terms"""
+def test_search(runner: CliRunner, tmp_path: Path):
+    """Should get search results for specified terms."""
+    with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
 
-    result = runner.invoke(cli, ["search", "term"])
+        conf_file = Path(temp_dir) / "tegracli.conf.yml"
 
-    assert result.exit_code == 0
+        with conf_file.open("w") as config:
+            yaml.dump(
+                {
+                    "api_id": 123456,
+                    "api_hash": "wahgi231kmdma91",
+                    "session_name": "test",
+                },
+                config,
+            )
+
+        result = runner.invoke(cli, ["search", "term"])
+
+        assert result.exit_code == 0
 
 
 patcher.stop()
