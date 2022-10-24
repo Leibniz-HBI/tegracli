@@ -5,6 +5,7 @@ tegracli.conf.yml
 *.jsonl
 *.ndjson
 *.csv
+*.yml*
 # ignore builds
 dist/
 # ignore caches
