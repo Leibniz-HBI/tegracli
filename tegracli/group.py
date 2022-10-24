@@ -87,6 +87,25 @@ class Group(yaml.YAMLObject):
                     return record
         return None
 
+    def update_member(self, member: str, new_value: str):
+        """update the entry for a member
+
+        params:
+          member: str:
+            the member to update
+          new_value: str:
+            the new value
+
+        returns:
+          Nothing, nada, nope.
+        """
+        try:
+            index = self.members.index(member)
+        except ValueError:
+            # nothing to do, just quit
+            return
+        self.members[index] = new_value
+
     def get_params(self, **kwargs) -> Dict:
         """return an pimped params dict"""
         return dict(self.params, **kwargs)
