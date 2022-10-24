@@ -25,12 +25,11 @@ jobs:
           pip install poetry
           poetry install --no-interaction --no-root
       - name: Test with pytest
-        run: poetry run pytest --cov-report html:coverage-${{ matrix.python-version }} --doctest-modules --disable-socket --cov=tegracli --capture=sys
+        run: poetry run pytest --cov-report html:coverage-${{ matrix.python-version }}
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
         with:
           name: pytest-results-${{ matrix.python-version }}
-          path: |
-            coverage-${{ matrix.python-version }}
+          path: coverage-${{ matrix.python-version }}
         # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
