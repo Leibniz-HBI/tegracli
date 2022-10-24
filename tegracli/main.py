@@ -176,7 +176,7 @@ def init(
         log.error(f"{results_directory} already exists. Aborting.")
         sys.exit(127)
 
-    # intialize account group
+    # initialize account group
     if isinstance(accounts, tuple):
         accounts = list(accounts)
     if accounts is None:
@@ -224,102 +224,104 @@ def run(ctx: click.Context, groups: Tuple[str]):
     run_group(ctx.obj["client"], groups)
 
 
+def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> None:
+    # check whether member is known already and, thus, present in profiles.jsonl
+    # if (yes
+    #   load user object
+    profile = conf.get_member_profile(member)
+    # if (no)
+    if profile is None:
+        if conf.get_error_state("entities") is False:
+            try:
+                #   load user object from TG and save it to profiles.jsonl
+                profile = client.loop.run_until_complete(
+                    get_profile(client, member, conf.name)
+                )
+            except (
+                telethon.errors.FloodWaitError,
+                telethon.errors.FloodError,
+            ) as error:
+                wait_time = 3600
+                if isinstance(error, telethon.errors.FloodWaitError):
+                    wait_time = error.seconds
+                log.warning(
+                    "Encountered FloodWaitError, suspending profile"
+                    + f"retrieval for {wait_time} seconds"
+                )
+                conf.set_error_state("entities", wait_time)
+                conf.set_error_state(
+                    "entities", wait_time
+                )  # suspend account retrieval for one hour
+                # to avoid banning/blocking of the account
+                return
+            except (ValueError, telethon.errors.RPCError) as error:
+                message = "ValueError"
+                if isinstance(error, telethon.errors.RPCError):
+                    message = error.message or "RPCError"
+                log.warning(f"Entity for {member} was not found due to a {message}.")
+                conf.mark_member_unreachable(member, message)
+                return
+            if profile is None:
+                conf.mark_member_unreachable(member, "Unknown")
+                return
+            # check whether profile is also unknown to TG
+            #   check whether the member was specified by a handle
+            #   if (yes)
+        else:
+            log.debug(f"Skipping {member}, due to suspended API method.")
+            return
+    if not str.isnumeric(member):
+        #       replace handle by ID
+        conf.update_member(member, str(profile["id"]))
+        conf.dump()
+
+    # get the input_entity from telethon
+    try:
+        entity = client.loop.run_until_complete(get_input_entity(client, int(member)))
+    except ValueError:
+        log.warning(f"Input entity for {member} not found. Skipping for now.")
+        return
+    # check whether a jsonl-file for this member exists
+    # if (yes)
+    #   iterate over lines in file and get the highest message.id
+    #   modify `params`-dict accordingly
+    _params = conf.get_params(entity=entity)
+    # Only set the ``min_id`` parameter if a file is existent for the user
+    min_id = conf.get_last_message_for(member)
+    if min_id is not None:
+        _params["min_id"] = min_id
+
+    log.debug(f"Request with the following parameters: {_params}")
+
+    # request data from telethon and write to disk
+    try:
+        with (Path(conf.name) / (member + ".jsonl")).open("a") as member_file:
+            client.loop.run_until_complete(
+                dispatch_iter_messages(
+                    client,
+                    params=_params,
+                    callback=partial(handle_message, file=member_file, injects=None),
+                )
+            )
+    except telethon.errors.ChannelPrivateError:
+        log.error(f"channel {profile.get('username') or ''} is private. Skipping.")
+
+
 def run_group(client: TelegramClient, groups: Tuple[str]):
     """runs the required operations for the specified groups."""
     cwd = Path()
 
-    if len(groups) >= 1:
-        _groups = list(groups)
-        # iterate groups
-        for group_name in _groups:
-            conf = _guarded_group_load(cwd, group_name)
+    # iterate groups
+    for group_name in groups:
+        # load group configuration
+        conf: Group = _guarded_group_load(cwd, group_name)
 
-            # iterate over group members
-            for index, member in enumerate(conf.members):
-                # check whether member is known already and, thus, present in profiles.jsonl
-                # if (yes
-                #   load user object
-                profile = conf.get_member_profile(member)
-                # if (no)
-                if profile is None:
-                    try:
-                        #   load user object from TG and save it to profiles.jsonl
-                        profile = client.loop.run_until_complete(
-                            get_profile(client, member, group_name)
-                        )
-                    except ValueError:
-                        log.warning(f"Entity for {member} was not found.")
-                        conf.mark_member_unreachable(member, "ValueError")
-                        continue
-                    except telethon.errors.RPCError as error:
-                        log.warning(
-                            f"Error for channel {member}. {error.message}. Skipping."
-                        )
-                        conf.mark_member_unreachable(
-                            member, error.message or "RPCError"
-                        )
-                        continue
-                    if profile is None:
-                        conf.mark_member_unreachable(member, "Unknown")
-                        continue
-                    # check whether profile is also unknown to TG
-                    #   check whether the member was specified by a handle
-                    #   if (yes)
-                if not str.isnumeric(member):
-                    #       replace handle by ID
-                    index = conf.members.index(member)
-                    conf.members[index] = str(profile["id"])
-                    member = str(profile["id"])
-                    conf.dump()
-
-                # get the input_entity from telethon
-                try:
-                    entity = client.loop.run_until_complete(
-                        get_input_entity(client, int(member))
-                    )
-                except ValueError:
-                    log.warning(
-                        f"Input entity for {member} not found. Skipping for now."
-                    )
-                    continue
-                # check whether a jsonl-file for this member exists
-                # if (yes)
-                #   iterate over lines in file and get the highest message.id
-                #   modify `params`-dict accordingly
-                _params = conf.get_params(entity=entity)
-                # Only set the ``min_id`` parameter if a file is existent for the user
-                min_id = conf.get_last_message_for(member)
-                if min_id is not None:
-                    _params["min_id"] = min_id
-
-                log.debug(f"Request with the following parameters: {_params}")
-
-                # request data from telethon and write to disk
-                try:
-                    with (Path(group_name) / (member + ".jsonl")).open(
-                        "a"
-                    ) as member_file:
-                        client.loop.run_until_complete(
-                            dispatch_iter_messages(
-                                client,
-                                params=_params,
-                                callback=partial(
-                                    handle_message, file=member_file, injects=None
-                                ),
-                            )
-                        )
-                except telethon.errors.ChannelPrivateError:
-                    log.error(
-                        f"channel {profile.get('title') or ''} is private. Skipping."
-                    )
-                log.debug(
-                    f"Done with {profile.get('title') or ''}. {index / len(conf.members) * 100}%"
-                )
-            # done.
-            log.info(f"Done with group {group_name}.")
-
-    else:
-        log.info("No group specified.")
+        # iterate over group members
+        for index, member in enumerate(conf.members):
+            _handle_group_member(member, conf, client)
+            log.debug(f"Done with {member}. {(index / len(conf.members) * 100):.2f}%")
+        # done.
+        log.info(f"Done with group {group_name}.")
 
 
 def _guarded_group_load(cwd: Path, _name: str) -> Group:

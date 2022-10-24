@@ -1,6 +1,7 @@
 """Tegracli
 Philipp Kessling, Leibniz-HBI, 2022
 """
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -23,6 +24,7 @@ class Group(yaml.YAMLObject):
         self.unreachable_members: List[Dict[str, str]] = []
         self.name = name or "new_group"
         self.params = params or {}
+        self.error_state = {}
 
         if not self._group_dir.exists():
             self._group_dir.mkdir()
@@ -40,6 +42,25 @@ class Group(yaml.YAMLObject):
     @property
     def _conf_path(self) -> Path:
         return self._group_dir / CONF_FILE_NAME
+
+    def get_error_state(self, slot: str) -> bool:
+        """get the error state for a API method"""
+        if not self.error_state:
+            self.error_state = {}
+        state = self.error_state.get(slot)
+        if state:
+            endtime = state.get("endtime")
+            if endtime:
+                return datetime.now() <= datetime.fromtimestamp(endtime)
+        return False
+
+    def set_error_state(self, slot: str, period: int) -> None:
+        """set the error state for the specified API method"""
+        error_period_end = datetime.now() + timedelta(seconds=period)
+        if not self.error_state:
+            self.error_state = {}
+        self.error_state[slot] = {"endtime": error_period_end.timestamp()}
+        self.dump()
 
     def get_member_profile(self, member: str) -> Optional[Dict[str, str]]:
         """loads a user profile from disk
@@ -65,6 +86,25 @@ class Group(yaml.YAMLObject):
                 if record.get("id") == _member or record.get("username") == _member:
                     return record
         return None
+
+    def update_member(self, member: str, new_value: str):
+        """update the entry for a member
+
+        params:
+          member: str:
+            the member to update
+          new_value: str:
+            the new value
+
+        returns:
+          Nothing, nada, nope.
+        """
+        try:
+            index = self.members.index(member)
+        except ValueError:
+            # nothing to do, just quit
+            return
+        self.members[index] = new_value
 
     def get_params(self, **kwargs) -> Dict:
         """return an pimped params dict"""
