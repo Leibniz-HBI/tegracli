@@ -31,7 +31,7 @@ atexit.register(lambda: log.debug("Terminating."))
 
 
 @click.group()
-@click.option("--debug/--no-debug", default=True)
+@click.option("--debug/--no-debug", default=False)
 @click.pass_context
 def cli(ctx: click.Context, debug: bool):
     """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
@@ -138,7 +138,7 @@ def get(  # pylint: disable=too-many-arguments
 
 @cli.group()
 def group():
-    """Manage account groups"""
+    """Manage account groups."""
     return
 
 
@@ -165,7 +165,7 @@ def init(
     name: str,
     accounts: List[str],
 ):
-    """initialize a new account group"""
+    """Initialize a new account group."""
     cwd = Path()
     results_directory = cwd / name
     params = {"limit": limit, "reverse": True}
@@ -208,7 +208,7 @@ def init(
 @group.command()
 @click.argument("groups", nargs=-1)
 def reset(groups: Tuple[str]):
-    """reset unreachable members for each group"""
+    """Reset unreachable members for each group."""
     for _group in groups:
         cwd = Path()
         conf = _guarded_group_load(cwd, _group)
@@ -220,7 +220,7 @@ def reset(groups: Tuple[str]):
 @click.argument("groups", nargs=-1)
 @click.pass_context
 def run(ctx: click.Context, groups: Tuple[str]):
-    """load a group configuration and run the groups operations"""
+    """Load a group configuration and run the groups operations."""
     run_group(ctx.obj["client"], groups)
 
 
@@ -308,7 +308,7 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
 
 
 def run_group(client: TelegramClient, groups: Tuple[str]):
-    """runs the required operations for the specified groups."""
+    """Runs the required operations for the specified groups."""
     cwd = Path()
 
     # iterate groups
@@ -338,9 +338,7 @@ def _guarded_group_load(cwd: Path, _name: str) -> Group:
 @click.argument("queries", nargs=-1)
 @click.pass_context
 def search(ctx: click.Context, queries: list[str]):
-    """This function searches Telegram content that is available to your account
-    for the specified search term(s).
-    """
+    """Searches Telegram content that is available to your account."""
     client = get_client(ctx.obj["credentials"])
 
     with client:
