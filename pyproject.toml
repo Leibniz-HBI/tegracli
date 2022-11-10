@@ -31,9 +31,10 @@ black = "^22.6.0"
 isort = "^5.10.1"
 pytest-cov = "^3.0.0"
 coverage = "^6.4.2"
+pydocstyle = "^6.1.1"
 
 [tool.pytest.ini_options]
-addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli"
+addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli --capture=sys"
 asyncio_mode = "strict"
 
 [build-system]
@@ -42,3 +43,16 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 tegracli = 'tegracli.main:cli'
+
+[tool.mypy]
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+module = [
+    "telethon",
+    "telethon.*"
+]
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"

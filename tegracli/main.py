@@ -1,45 +1,49 @@
-import datetime
+"""Tegracli's click structure live here.
+
+2022, Philipp Kessling, Leibniz-Institute for Media Research
+"""
+import atexit
+import re
 import sys
-import time
+from datetime import datetime
+from functools import partial
 from pathlib import Path
-from typing import Dict
+from typing import List, Tuple
 
 import click
-import ujson
+import telethon
 import yaml
 from loguru import logger as log
 from telethon import TelegramClient
-from telethon.errors import FloodWaitError
 
+from .dispatch import (
+    dispatch_get,
+    dispatch_iter_messages,
+    dispatch_search,
+    get_input_entity,
+    get_profile,
+    handle_message,
+)
+from .group import Group
+from .utilities import ensure_authentication, get_client
 
-def get_client(conf: Dict) -> TelegramClient:
-    """ Utility function to initialize the TelegramClient from the loaded configuration values.
-    """
-    session_name = conf["session_name"]
-    api_id = conf["api_id"]
-    api_hash = conf["api_hash"]
-
-    client = TelegramClient(session_name, api_id, api_hash)
-    client.flood_sleep_threshold = 15 * 60
-
-    return client
-
-
-async def ensure_authentification(client):
-    """ Utility function to ensure that the user is authorized.
-    If not an interactive prompt for Telegrams 2FA method is shown.
-    """
-    if not await client.is_user_authorized():
-        phone_number = click.prompt("Enter your phone number:")
-        await client.send_code_request(phone_number)
-        await client.sign_in(phone_number, click.prompt("Enter 2FA code: "))
+atexit.register(lambda: log.debug("Terminating."))
 
 
 @click.group()
+@click.option("--debug/--no-debug", default=False)
 @click.pass_context
-def cli(ctx: click.Context):
-    """ Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!
-    """
+def cli(ctx: click.Context, debug: bool):
+    """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
+
+    async def _handle_auth(client: TelegramClient):
+        phone_number = click.prompt("Enter your phone number:")
+        await client.send_code_request(phone_number)
+        await client.sign_in(phone_number, click.prompt("Enter 2FA code:"))
+
+    if debug:
+        log.add("tegracli.log.json", serialize=True)
+
     if ctx.obj is None:
         ctx.obj = {}
 
@@ -53,7 +57,12 @@ def cli(ctx: click.Context):
     with conf_path.open("r", encoding="UTF-8") as config:
         conf = yaml.safe_load(config)
 
+    client = get_client(conf)
+
     ctx.obj["credentials"] = conf
+    ctx.obj["client"] = client
+
+    client.loop.run_until_complete(ensure_authentication(client, _handle_auth))
 
 
 @cli.command()
@@ -83,20 +92,22 @@ def cli(ctx: click.Context):
     default=True,
     help="Should post numbers count upward or downward. Defaults to forward.",
 )
-@click.option("--reply_to", "-r", help="Only messages replied to specific post id.")
+@click.option(
+    "--reply_to", "-r", type=int, help="Only messages replied to specific post id."
+)
 @click.argument("channels", nargs=-1)
 @click.pass_context
-def get(
+def get(  # pylint: disable=too-many-arguments
     ctx: click.Context,
-    limit: int or None,
-    offset_date: str or None,
-    offset_id: str or None,
-    min_id: int or None,
-    max_id: int or None,
-    add_offset: int or None,
-    from_user: str or None,
+    limit: int,
+    offset_date: datetime,
+    offset_id: int,
+    min_id: int,
+    max_id: int,
+    add_offset: int,
+    from_user: str,
     reverse: bool,
-    reply_to: str or None,
+    reply_to: int,
     channels: list[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
@@ -106,7 +117,7 @@ def get(
     if limit is not None:
         params["limit"] = None if limit == -1 else limit
     if offset_date is not None:
-        params["offset_date"] = offset_date
+        params["offset_date"] = offset_date  # type: ignore
     if offset_id is not None:
         params["offset_id"] = offset_id
     if max_id is not None:
@@ -116,7 +127,7 @@ def get(
     if add_offset is not None:
         params["add_offset"] = add_offset
     if from_user is not None:
-        params["from_user"] = from_user
+        params["from_user"] = from_user  # type: ignore
     if reply_to is not None:
         params["reply_to"] = reply_to
     params["reverse"] = reverse
@@ -125,88 +136,214 @@ def get(
         client.loop.run_until_complete(dispatch_get(channels, client, params=params))
 
 
+@cli.group()
+def group():
+    """Manage account groups."""
+    return
+
+
+@group.command()
+@click.option(
+    "--read_file",
+    "-f",
+    type=click.Path(),
+    help="read an account list from a file, one handle/id/url per line.",
+)
+@click.option(
+    "--start_date",
+    "-s",
+    type=click.DateTime(["%Y-%m-%d"]),
+    help="Start date for the collection. Must be in YYYY-MM-DD format.",
+)
+@click.option("--limit", "-l", type=int, help="number of posts fo retrieve in one run")
+@click.argument("name", type=str, nargs=1, required=True)
+@click.argument("accounts", type=str, nargs=-1)
+def init(
+    read_file: str,
+    start_date: datetime,
+    limit: int,
+    name: str,
+    accounts: List[str],
+):
+    """Initialize a new account group."""
+    cwd = Path()
+    results_directory = cwd / name
+    params = {"limit": limit, "reverse": True}
+    if start_date is not None:
+        params["offset_date"] = start_date  # type: ignore
+    # check whether the directory we try to create is already there.
+    if results_directory.exists():
+        log.error(f"{results_directory} already exists. Aborting.")
+        sys.exit(127)
+
+    # initialize account group
+    if isinstance(accounts, tuple):
+        accounts = list(accounts)
+    if accounts is None:
+        accounts = []
+
+    if read_file is not None:
+        _read_file = Path(read_file)
+        # check whether that file exists:
+        if not _read_file.exists():
+            log.error(f"Cannot read non-existent file {_read_file}. Aborting.")
+            sys.exit(127)
+
+        with _read_file.open("r", encoding="utf8") as file:
+            for line in file:
+                line = str(line)
+                # test whether `line` is a valid id|handle|url
+                for match in re.finditer(r"[\w\d]+", line):
+                    matched_line = match.group(0)
+                    log.debug(f"Found {matched_line}.")
+                    accounts.append(matched_line)
+
+    log.debug(f"Found these accounts: {', '.join(accounts)}")
+
+    if len(accounts) >= 1:
+        _group = Group(accounts, name, params)
+        _group.dump()
+
+
+@group.command()
+@click.argument("groups", nargs=-1)
+def reset(groups: Tuple[str]):
+    """Reset unreachable members for each group."""
+    for _group in groups:
+        cwd = Path()
+        conf = _guarded_group_load(cwd, _group)
+        conf.retry_all_unreachable()
+        conf.dump()
+
+
+@group.command()
+@click.argument("groups", nargs=-1)
+@click.pass_context
+def run(ctx: click.Context, groups: Tuple[str]):
+    """Load a group configuration and run the groups operations."""
+    run_group(ctx.obj["client"], groups)
+
+
+def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> None:
+    # check whether member is known already and, thus, present in profiles.jsonl
+    # if (yes
+    #   load user object
+    profile = conf.get_member_profile(member)
+    # if (no)
+    if profile is None:
+        if conf.get_error_state("entities") is False:
+            try:
+                #   load user object from TG and save it to profiles.jsonl
+                profile = client.loop.run_until_complete(
+                    get_profile(client, member, conf.name)
+                )
+            except (
+                telethon.errors.FloodWaitError,
+                telethon.errors.FloodError,
+            ) as error:
+                wait_time = 3600
+                if isinstance(error, telethon.errors.FloodWaitError):
+                    wait_time = error.seconds
+                log.warning(
+                    "Encountered FloodWaitError, suspending profile"
+                    + f"retrieval for {wait_time} seconds"
+                )
+                conf.set_error_state("entities", wait_time)
+                conf.set_error_state(
+                    "entities", wait_time
+                )  # suspend account retrieval for one hour
+                # to avoid banning/blocking of the account
+                return
+            except (ValueError, telethon.errors.RPCError) as error:
+                message = "ValueError"
+                if isinstance(error, telethon.errors.RPCError):
+                    message = error.message or "RPCError"
+                log.warning(f"Entity for {member} was not found due to a {message}.")
+                conf.mark_member_unreachable(member, message)
+                return
+            if profile is None:
+                conf.mark_member_unreachable(member, "Unknown")
+                return
+            # check whether profile is also unknown to TG
+            #   check whether the member was specified by a handle
+            #   if (yes)
+        else:
+            log.debug(f"Skipping {member}, due to suspended API method.")
+            return
+    if not str.isnumeric(member):
+        #       replace handle by ID
+        conf.update_member(member, str(profile["id"]))
+        conf.dump()
+
+    # get the input_entity from telethon
+    try:
+        entity = client.loop.run_until_complete(get_input_entity(client, int(member)))
+    except ValueError:
+        log.warning(f"Input entity for {member} not found. Skipping for now.")
+        return
+    # check whether a jsonl-file for this member exists
+    # if (yes)
+    #   iterate over lines in file and get the highest message.id
+    #   modify `params`-dict accordingly
+    _params = conf.get_params(entity=entity)
+    # Only set the ``min_id`` parameter if a file is existent for the user
+    min_id = conf.get_last_message_for(member)
+    if min_id is not None:
+        _params["min_id"] = min_id
+
+    log.debug(f"Request with the following parameters: {_params}")
+
+    # request data from telethon and write to disk
+    try:
+        with (Path(conf.name) / (member + ".jsonl")).open("a") as member_file:
+            client.loop.run_until_complete(
+                dispatch_iter_messages(
+                    client,
+                    params=_params,
+                    callback=partial(handle_message, file=member_file, injects=None),
+                )
+            )
+    except telethon.errors.ChannelPrivateError:
+        log.error(f"channel {profile.get('username') or ''} is private. Skipping.")
+
+
+def run_group(client: TelegramClient, groups: Tuple[str]):
+    """Runs the required operations for the specified groups."""
+    cwd = Path()
+
+    # iterate groups
+    for group_name in groups:
+        # load group configuration
+        conf: Group = _guarded_group_load(cwd, group_name)
+
+        # iterate over group members
+        for index, member in enumerate(conf.members):
+            _handle_group_member(member, conf, client)
+            log.debug(f"Done with {member}. {(index / len(conf.members) * 100):.2f}%")
+        # done.
+        log.info(f"Done with group {group_name}.")
+
+
+def _guarded_group_load(cwd: Path, _name: str) -> Group:
+    group_conf_fil = cwd / _name / "tegracli_group.conf.yml"
+    if not group_conf_fil.exists():
+        log.error(f"Unknown group {_name}. Aborting.")
+        sys.exit(127)
+    with group_conf_fil.open("r") as file:
+        _group: Group = yaml.full_load(file)
+        return _group
+
+
 @cli.command()
 @click.argument("queries", nargs=-1)
 @click.pass_context
 def search(ctx: click.Context, queries: list[str]):
-    """This function searches Telegram content that is available to your account
-    for the specified search term(s).
-    """
+    """Searches Telegram content that is available to your account."""
     client = get_client(ctx.obj["credentials"])
 
     with client:
         client.loop.run_until_complete(dispatch_search(queries, client))
 
 
-def str_dict(d: Dict) -> Dict:
-    """ Utility function to recursively convert all values in the input dict to strings.
-    """
-    if type(d) is dict:
-        return {k: str_dict(v) for (k, v) in d.items()}
-    elif d is None:
-        return d
-    elif type(d) is list:
-        return [str_dict(v) for v in d]
-    elif type(d) is datetime.datetime:
-        return d.strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        return str(d)
-
-
-async def dispatch_get(users, client: TelegramClient, params: Dict):
-    await ensure_authentification(client)
-    me = await client.get_me()
-
-    log.info(f"Using telegram account of {me.to_dict().get('username')}")
-
-    for user in users:
-        try:
-            if str.isnumeric(user):
-                user = int(user)
-            other = await client.get_entity(user)
-            o_dict = other.to_dict()
-
-            n = 0
-            async for message in client.iter_messages(other, wait_time=10, **params):
-                log.debug(f"Received: {other.username}-{message.id}")
-                with Path(f"{other.id}.jsonl").open("a", encoding="utf8") as file:
-                    m_dict = message.to_dict()
-                    m_dict["user"] = o_dict
-                    ujson.dump(str_dict(m_dict), file)
-                    n += 1
-                    file.write("\n")
-        except FloodWaitError as err:
-            log.error(
-                f"FloodWaitError occurred. Waiting for {datetime.timedelta(seconds=err.seconds)} to resume."
-            )
-            time.sleep(err.seconds)
-        except ValueError as err:
-            log.error(f"No dice for {user}, because {err}")
-            continue
-        log.info(f"Fetched {n} messages for {other.to_dict().get('title')}!")
-    await client.send_message(
-        "me", f"Hello, myself! I\"m done with {', '.join(users)}!"
-    )
-
-
-async def dispatch_search(queries: list[str], client: TelegramClient):
-    await ensure_authentification(client)
-    me = await client.get_me()
-    log.info(f"Using telegram accout of {me.to_dict().get('username')}")
-    for query in queries:
-        n = 0
-        try:
-            async for message in client.iter_messages(None, search=query, limit=15):
-                with Path(f"{query}.jsonl").open("a", encoding="utf8") as file:
-                    m_dict = message.to_dict()
-                    ujson.dump(str_dict(m_dict), file)
-                    n += 1
-                    file.write("\n")
-        except ValueError as error:
-            log.error(f"No dice for {query}, because {error}")
-            continue
-        log.info(f"Fetched {n} messages for {query}!")
-
-
-if __name__ == "main":
-    cli({})
+# if __name__ == "main":
+#     cli({})
