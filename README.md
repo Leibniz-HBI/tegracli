@@ -1,16 +1,19 @@
 # tegracli
 
+![The TEGRACLI logo](https://github.com/Leibniz-HBI/tegracli/blob/trunk/tegracli.png?raw=true)
+
 A convenience wrapper around Telethon and the Telegram Client API for research purposes.
 
 # Installation Instructions
 
-`tegracli` uses Poetry and python >= 3.9 for building and installing.
+`tegracli` uses Poetry and python >= 3.9 and < 4.0 for building and installing.
 
 To install using pipx, run the following command `pipx install tegracli`.
 
 ## How to get API keys
 
-If you don't have API keys for Telegram, head over to [my.telegram.org](https://my.telegram.org). Click on [API development tools](https://my.telegram.org/apps), fill the form to create yourself an app and pluck the keys into `tegracli.conf.yaml`. The session name can be arbitrary.
+If you don't have API keys for Telegram, head over to [my.telegram.org](https://my.telegram.org).
+Click on [API development tools](https://my.telegram.org/apps), fill the form to create yourself an app and pluck the keys into `tegracli.conf.yaml`. The session name can be arbitrary.
 
 ```yaml
 api_id: 1234567
