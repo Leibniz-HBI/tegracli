@@ -1,11 +1,10 @@
-"""dispatch functions that dispatch requests to Telethon and MTProto
-"""
+"""Dispatch functions that request data from Telethon and MTProto."""
 import datetime
 import time
 from functools import partial
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import telethon
 import ujson
@@ -20,19 +19,19 @@ from .utilities import str_dict
 async def dispatch_iter_messages(
     client: TelegramClient, params: Dict, callback: MessageHandler
 ) -> None:
-    """dispatch a a TG-method with callback
+    """Dispatch a a TG-method with callback.
 
     Parameters:
         client : TelegramClient
         params : Dict
-        callback : Callable
+        callback : MessageHandler
     """
     async for message in client.iter_messages(wait_time=10, **params):
         await callback(message)
 
 
 async def dispatch_get(users, client: TelegramClient, params: Dict):
-    """get the message history of a specified set of users."""
+    """Get the message history of a specified set of users."""
 
     for user in users:
         done = False
@@ -62,8 +61,8 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
             done = True
 
 
-async def dispatch_search(queries: list[str], client: TelegramClient):
-    """dispatch a global search"""
+async def dispatch_search(queries: List[str], client: TelegramClient):
+    """Dispatch a global search."""
     local_account = await client.get_me()
     log.info(f"Using telegram accout of {local_account.username}")
     for query in queries:
@@ -83,7 +82,7 @@ async def dispatch_search(queries: list[str], client: TelegramClient):
 async def handle_message(
     message: telethon.types.Message, file: TextIOWrapper, injects: Optional[Dict]
 ):
-    """Accept incoming messages and log them to disk
+    """Accept incoming messages and log them to disk.
 
     Parameters
     ----------
@@ -109,7 +108,7 @@ async def handle_message(
 async def get_input_entity(
     client: TelegramClient, member_id: int
 ) -> Optional[telethon.types.TypeInputPeer]:
-    """wraps the client.get_input_entity function
+    """Wraps the client.get_input_entity function.
 
     Parameters
     ----------
@@ -127,7 +126,7 @@ async def get_input_entity(
 async def get_profile(
     client: TelegramClient, member: str, group_name: str
 ) -> Optional[Dict[str, str]]:
-    """Returns a Dict from the requested entity
+    """Returns a Dict from the requested entity.
 
     Parameters
     ----------

@@ -10,7 +10,7 @@ This has the implication that we need valid credentials in a valid `tegracli.con
 # pylint: disable=wrong-import-position
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import pytest
 import yaml
@@ -36,7 +36,7 @@ def client():
 
 @pytest.mark.api
 @pytest.mark.enable_socket
-def test_search(queries: list[str], client: TelegramClient):
+def test_search(queries: List[str], client: TelegramClient):
     """Should run a search on the specified queries
 
     Asserts
@@ -59,7 +59,7 @@ def test_search(queries: list[str], client: TelegramClient):
     [{"limit": 1}, {"limit": 2, "reverse": True}, {"offset_id": 5, "limit": 1}],
 )
 @pytest.mark.parametrize("queries", [["channelnotfound123"], ["channel", "1446651076"]])
-def test_get(queries: list[str], client: TelegramClient, params: Dict):
+def test_get(queries: List[str], client: TelegramClient, params: Dict):
     """Should get message for existing channels
 
     Asserts

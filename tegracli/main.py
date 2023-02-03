@@ -108,7 +108,7 @@ def get(  # pylint: disable=too-many-arguments
     from_user: str,
     reverse: bool,
     reply_to: int,
-    channels: list[str],
+    channels: List[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
     client = get_client(ctx.obj["credentials"])
@@ -337,7 +337,7 @@ def _guarded_group_load(cwd: Path, _name: str) -> Group:
 @cli.command()
 @click.argument("queries", nargs=-1)
 @click.pass_context
-def search(ctx: click.Context, queries: list[str]):
+def search(ctx: click.Context, queries: List[str]):
     """Searches Telegram content that is available to your account."""
     client = get_client(ctx.obj["credentials"])
 
