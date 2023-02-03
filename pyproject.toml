@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tegracli"
-version = "0.1.1"
+version = "0.1.2"
 description = "A research-focused Telegram CLI application"
 authors = ["Philipp Kessling <p.kessling@leibniz-hbi.de>", "Felix Münch <f.muench@lebniz-hbi.de>"]
 readme  = "README.md"
