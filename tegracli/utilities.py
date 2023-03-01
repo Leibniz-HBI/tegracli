@@ -1,5 +1,4 @@
-"""Utility functions for tegracli
-"""
+"""Utility functions for tegracli."""
 import datetime
 from functools import singledispatch
 from typing import Any, Dict, Union
@@ -51,8 +50,13 @@ async def ensure_authentication(
     client: TelegramClient, callback: AuthenticationHandler
 ):
     """Utility function to ensure that the user is authorized.
+
     If not an interactive prompt for Telegrams 2FA method is shown.
+
+    Params:
+        client TelegramClient
+        callback AuthenticationHandler
     """
     await client.connect()
     if not await client.is_user_authorized():
-        callback(client)
+        await callback(client)
