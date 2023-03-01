@@ -192,4 +192,17 @@ def test_search(runner: CliRunner, tmp_path: Path):
         assert result.exit_code == 0
 
 
+def test_configure(runner: CliRunner, tmp_path: Path):
+    """Should create a new configuration file."""
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(
+            cli,
+            ["--no-debug", "configure"],
+            input="12345678\n123042jdsnfsisnfkr\ntestytest",
+        )
+        assert result.exit_code == 0
+        assert "api_id" in result.output
+        assert Path("tegracli.conf.yml").exists()
+
+
 patcher.stop()

@@ -2,7 +2,7 @@
 
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
-import atexit
+# import atexit
 import re
 import sys
 from datetime import datetime
@@ -27,7 +27,16 @@ from .dispatch import (
 from .group import Group
 from .utilities import ensure_authentication, get_client
 
-atexit.register(lambda: log.debug("Terminating."))
+# atexit.register(lambda: log.debug("Terminating."))
+
+CONFIGURATION_PATH: Path = Path("tegracli.conf.yml")
+"""Path pointing to the tegracli.auth config."""
+
+
+async def _handle_auth(client: TelegramClient):
+    phone_number = click.prompt("Enter your phone number")
+    await client.send_code_request(phone_number)
+    await client.sign_in(phone_number, click.prompt("Enter 2FA code"))
 
 
 @click.group()
@@ -35,32 +44,37 @@ atexit.register(lambda: log.debug("Terminating."))
 @click.pass_context
 def cli(ctx: click.Context, debug: bool):
     """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
-
-    async def _handle_auth(client: TelegramClient):
-        phone_number = click.prompt("Enter your phone number:")
-        await client.send_code_request(phone_number)
-        await client.sign_in(phone_number, click.prompt("Enter 2FA code:"))
-
-    if debug:
+    if debug is True:
         log.add("tegracli.log.json", serialize=True)
 
     if ctx.obj is None:
         ctx.obj = {}
 
-    conf_path = Path("tegracli.conf.yml")
-
-    if not conf_path.exists():
+    if not CONFIGURATION_PATH.exists() and not ctx.invoked_subcommand == "configure":
         log.error("Configuration not found. Terminating!")
         sys.exit(127)
-    log.debug(f"Starting tegracli with configuration: {str(conf_path.resolve())}")
 
-    with conf_path.open("r", encoding="UTF-8") as config:
-        conf = yaml.safe_load(config)
+    log.debug(
+        f"Starting tegracli with configuration: {str(CONFIGURATION_PATH.resolve())}"
+    )
 
-    client = get_client(conf)
+    if not ctx.invoked_subcommand == "configure":
+        with CONFIGURATION_PATH.open("r", encoding="UTF-8") as config_file:
+            config = yaml.safe_load(config_file)
+        ctx.obj["credentials"] = config
+        client = get_client(config)
+        ctx.obj["client"] = client
 
-    ctx.obj["credentials"] = conf
-    ctx.obj["client"] = client
+
+@cli.command()
+def configure():
+    """Configure tegracli."""
+    keys = ["api_id", "api_hash", "session_name"]
+    config_dict = {key: click.prompt(key) for key in keys}
+    with CONFIGURATION_PATH.open("w", encoding="UTF-8") as config:
+        yaml.dump(config_dict, config)
+
+    client = get_client(config_dict)
 
     client.loop.run_until_complete(ensure_authentication(client, _handle_auth))
 

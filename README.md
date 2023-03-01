@@ -27,13 +27,28 @@ This template file is provided with the repository.
 
 `tegracli` is a terminal application to access the Telegram API for research purposes.
 In order to retrieve messages the configuration-file from the section before must be present in the directory you start `tegracli`.
+
 The following commands are available:
+
+## CONFIGURE
+
+Opens an interactive prompt for configuring API-access. Aks you to input your API id, API hash and session name and requests
+a 2FA code from Telegram.
+
+```text
+Usage: tegracli configure [OPTIONS]
+
+  Configure tegracli.
+
+Options:
+  --help  Show this message and exit.
+```
 
 ## GET
 
 To _get_ messages from a number of channels, use this command.
 
-```
+```text
 Usage: tegracli get [OPTIONS] [CHANNELS]...
 
   Get messages for the specified channels by either ID or username.
@@ -53,8 +68,9 @@ Options:
   -r, --reply_to TEXT           Only messages replied to specific post id.
   --help                        Show this message and exit.
 ```
+
 | **parameter**       | **description**                                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|
 | **channels**        | a list of of either telegram usernames, channel or group URLs or user IDs.                                                   |
 | **limit**           | number of messages to retrieve, positive integer. If set to `-1` , retrieves all messages in the channel. defaults to `-1`.  |
 | **offset_date**     | specify start point of retrieval by date, retrieval direction is controlled by `reverse/forward`. Format must be YYYY-MM-DD. |
@@ -70,31 +86,31 @@ Options:
 
 To retrieve the last fifty messages from a Telegram channel:
 
-```
+```bash
 tegracli get --limit 50 corona_infokanal_bmg
 ```
 
 To retrieve the entire history starting with post #1 of a channel, set `limit` to `-1`.
 
-```
+```bash
 tegracli get --reverse --limit -1 corona_infokanal_bmg
 ```
-To retrieve messages sent after Januar, 1st 2022:
+To retrieve messages sent after January, 1st 2022:
 
-```
-tegracli get --offset_data 2022-01-01 corona_infokanal_bmg
+```bash
+tegracli get --offset_date 2022-01-01 corona_infokanal_bmg
 ```
 
-To retrieve message sent before Januar, 1st 2022:
+To retrieve message sent before January, 1st 2022:
 
-```
-tegracli get --reverse --offset_data 2022-01-01 corona_infokanal_bmg
+```bash
+tegracli get --reverse --offset_date 2022-01-01 corona_infokanal_bmg
 ```
 ## SEARCH
 
 To _search_ messages of your chats and groups and channels you are subscribed to, use this command.
 
-```
+```text
 Usage: tegracli search [OPTIONS] [QUERIES]...
 
   This function searches Telegram content that is available to your account for the specified search term(s).
@@ -105,7 +121,7 @@ Options:
 
 ## GROUP INIT and GROUP RUN
 
-In order to support updatable  and long running collections `tegracli` sports an *account group* feature which retrieves
+In order to support updatable  and long-running collections `tegracli` sports an *account group* feature which retrieves
 the history of a given set of accounts and is able to retrieve updates on each of these accounts.
 
 Groups are initialized by calling `teracli group init`, where accounts to track are stated by either stating them as arguments
@@ -116,10 +132,10 @@ or by reading in a file.
 Account files are expected to follow these requirements:
 
 - UTF8 text document,
-- per line one accout, given as either username, channel-URL or ID,
+- per line one account, given as either username, channel-URL or ID,
 - there shall be no header and  no additional columns
 
-```
+```text
 Usage: tegracli group init [OPTIONS] NAME [ACCOUNTS]...
 
   initialize a new account group
@@ -134,14 +150,14 @@ Options:
 ```
 
 A group is essentially a directory in your tegracli project folder which holdes
-an group configuration file, a `profiles.jsonl` file which will collect all user objects returned
+a group configuration file, a `profiles.jsonl` file which will collect all user objects returned
 by Telegram (these will be recycled to save API requests), as well as the jsonl-files containing the messages.
 The messages-files are structured in a way that one file holds the messages of one account and is named by the
 account's ID.
 
 An exemplary project could look this:
 
-```
+```text
 tegracli-project/
  |- tegracli.conf.yml
  |- mysession.session
@@ -153,7 +169,7 @@ tegracli-project/
 ```
 To run the project command your terminal to `tegracli group run my_group` to collect the latest post of the accounts you want to track.
 
-```
+```text
 Usage: tegracli group run [OPTIONS] [GROUPS]...
 
   load a group configuration and run the groups operations
@@ -162,7 +178,7 @@ Usage: tegracli group run [OPTIONS] [GROUPS]...
 ## Result File Format
 
 Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's or user's id, for searches the query.
-**BEWARE:** how directories and files are layed out is subject to active development and prone to changes in the near future.
+**BEWARE:** how directories and files are structured is subject to active development and prone to changes in the near future.
 
 # Developer Installation
 
@@ -170,4 +186,4 @@ Messages are stored in `jsonl`-files per channel or query. For channels filename
 2. Clone repository and unzip, if necessary,
 3. In the directory run `poetry install`,
 4. Run `poetry shell` to start the development virtualenv,
-6. Run `pytest` to run tests, run `pytest --run_api` too include tests against the Telegram API (**these do require a valid configuration**), coverage report can be found under `tests/coverage`.
+5. Run `pytest` to run tests, run `pytest --run_api` to include tests against the Telegram API (**these do require a valid configuration**), coverage report can be found under `tests/coverage`.
