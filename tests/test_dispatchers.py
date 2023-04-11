@@ -1,4 +1,4 @@
-""" # Dispatcher Functions Test
+"""Dispatcher Functions Tests.
 
 This tests suit concerns itself with the asynchronous dispatcher functions.
 
@@ -13,21 +13,23 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import ujson
 import yaml
 from telethon import TelegramClient
 
+from tegracli.dispatch import dispatch_hydrate
 from tegracli.main import dispatch_get, dispatch_search
 
 
 @pytest.fixture
 def queries():
-    """random query strings"""
+    """Random query strings."""
     return ["randomstring"]
 
 
 @pytest.fixture
 def client():
-    """Get a configured client"""
+    """Get a configured client."""
     with Path("tegracli.conf.yml").open("r", encoding="utf8") as conf:
         conf = yaml.safe_load(conf)
 
@@ -37,19 +39,13 @@ def client():
 @pytest.mark.api
 @pytest.mark.enable_socket
 def test_search(queries: List[str], client: TelegramClient):
-    """Should run a search on the specified queries
+    """Should run a search on the specified queries.
 
-    Asserts
-    -------
-
-    Should not throw exception
+    Asserts:
+        - Should not throw exception
     """
-
-    # client = Mock(TelegramClient)
-    # client.loop = Mock(AbstractEventLoop)
     with client:
         client.loop.run_until_complete(dispatch_search(queries, client))
-    # client.assert_called()
 
 
 @pytest.mark.api
@@ -60,14 +56,49 @@ def test_search(queries: List[str], client: TelegramClient):
 )
 @pytest.mark.parametrize("queries", [["channelnotfound123"], ["channel", "1446651076"]])
 def test_get(queries: List[str], client: TelegramClient, params: Dict):
-    """Should get message for existing channels
+    """Should get message for existing channels.
 
-    Asserts
-    -------
-
-    Should not throw exception
+    Asserts:
+    - Should not throw exception
     """
     # client = Mock(TelegramClient)
     # client.loop = Mock(AbstractEventLoop)
     with client:
         client.loop.run_until_complete(dispatch_get(queries, client, params))
+
+
+@pytest.mark.api
+@pytest.mark.enable_socket
+@pytest.mark.parametrize(
+    "params,results", [["QlobalChange/12182", 12182], ["QlobalChangeEspana/162", 162]]
+)
+def test_dispatch_hydrate(params: str, results: int, client: TelegramClient):
+    """Should get message for existing channels.
+
+    Asserts:
+    - Should not throw exception
+    """
+    print("params", params, "results", results)
+
+    output_file = Path("test_hydrate.jsonl")
+    if output_file.exists():
+        output_file.unlink()
+    channel, post_id = params.split("/")
+    post_id = int(post_id)
+
+    with output_file.open("a", encoding="utf-8") as file:
+        with client:
+            client.loop.run_until_complete(
+                dispatch_hydrate(channel, [post_id], file, client)
+            )
+
+    with output_file.open("r", encoding="utf-8") as file:
+        for line in file:
+            try:
+                res = ujson.loads(
+                    line
+                )  # pylint: disable=I1101  # c-extensions-no-member, what we
+                # know it's there and that's why we don't want to see it
+                assert int(res["id"]) == results
+            except ValueError:
+                continue

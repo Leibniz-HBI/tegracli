@@ -15,16 +15,19 @@ from telethon.errors import FloodWaitError
 from .types import MessageHandler
 from .utilities import str_dict
 
+# pylint: disable=I1101  # c-extensions-no-member; we know it's there and that's why we don't
+# want to see it
+
 
 async def dispatch_iter_messages(
     client: TelegramClient, params: Dict, callback: MessageHandler
 ) -> None:
-    """Dispatch a a TG-method with callback.
+    """Dispatch a TG-method with callback.
 
-    Parameters:
-        client : TelegramClient
-        params : Dict
-        callback : MessageHandler
+    Args:
+        client: the client to use.
+        params: the parameters to pass to the method.
+        callback: the callback to pass data to.
     """
     async for message in client.iter_messages(wait_time=10, **params):
         await callback(message)
@@ -32,7 +35,6 @@ async def dispatch_iter_messages(
 
 async def dispatch_get(users, client: TelegramClient, params: Dict):
     """Get the message history of a specified set of users."""
-
     for user in users:
         done = False
         while done is False:
@@ -61,10 +63,24 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
             done = True
 
 
+async def dispatch_hydrate(
+    channel: str,
+    post_ids: List[str],
+    output_file: TextIOWrapper,
+    client: TelegramClient,
+):
+    """Dispatch a hydration by channel_id/post_id."""
+    await dispatch_iter_messages(
+        client,
+        {"entity": channel, "ids": post_ids},
+        partial(handle_message, file=output_file, injects=None),
+    )
+
+
 async def dispatch_search(queries: List[str], client: TelegramClient):
     """Dispatch a global search."""
     local_account = await client.get_me()
-    log.info(f"Using telegram accout of {local_account.username}")
+    log.info(f"Using telegram account of {local_account.username}")
     for query in queries:
         try:
             async for message in client.iter_messages(None, search=query, limit=15):
@@ -84,18 +100,11 @@ async def handle_message(
 ):
     """Accept incoming messages and log them to disk.
 
-    Parameters
-    ----------
-
-    message : telethon.types.Message : incoming single message
-    file : TextIOWrapper : opened file to dump the message's json into
-
-    Returns
-    -------
-
-    None : nada, nothing
+    Args:
+        message: incoming single message.
+        file: opened file to dump the message's json into.
+        injects: additional data to inject into the message.
     """
-    # log.debug(f"Received {message.peer_id.channel_id}/{message.id}")
     m_dict = str_dict(message.to_dict())
     if injects is not None:
         for key, value in injects.items():
@@ -110,15 +119,12 @@ async def get_input_entity(
 ) -> Optional[telethon.types.TypeInputPeer]:
     """Wraps the client.get_input_entity function.
 
-    Parameters
-    ----------
+    Args:
+        client: signed in TG client.
+        member_id: id/handle/URL of the entity to get.
 
-    client : TelegramClient : signed in TG client
-    member_id : int : id/handle/URL of the entity to get
-
-    Returns
-    -------
-    Optional[telethon.types.TypeInputPeer] : returns the requested entity or None
+    Returns:
+        Optional[telethon.types.TypeInputPeer] : returns the requested entity or None
     """
     return await client.get_input_entity(member_id)
 
@@ -128,11 +134,10 @@ async def get_profile(
 ) -> Optional[Dict[str, str]]:
     """Returns a Dict from the requested entity.
 
-    Parameters
-    ----------
-
-    client : TelegramClient : signed in TG client
-    member : str : id/handle/URL of the entity to request
+    Args:
+        client: signed in TG client.
+        member: id/handle/URL of the entity to request.
+        group_name: name of the group to save the profile to.
     """
     _member = int(member) if str.isnumeric(member) else member
     profile = await client.get_entity(_member)

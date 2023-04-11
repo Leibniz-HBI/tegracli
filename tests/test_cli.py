@@ -205,4 +205,26 @@ def test_configure(runner: CliRunner, tmp_path: Path):
         assert Path("tegracli.conf.yml").exists()
 
 
+def test_hydrate(runner: CliRunner, tmp_path: Path):
+    """Should hydrate a list of ids."""
+    with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
+        conf_file = Path(temp_dir) / "tegracli.conf.yml"
+
+        with conf_file.open("w") as config:
+            yaml.dump(
+                {
+                    "api_id": 123456,
+                    "api_hash": "wahgi231kmdma91",
+                    "session_name": "test",
+                },
+                config,
+            )
+
+        test_messages = ["QlobalChange/12182", "QlobalChangeEspana/162"]
+
+        result = runner.invoke(cli, ["hydrate"], input="\n".join(test_messages))
+
+    assert result.exit_code == 0
+
+
 patcher.stop()

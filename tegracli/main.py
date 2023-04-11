@@ -18,6 +18,7 @@ from telethon import TelegramClient
 
 from .dispatch import (
     dispatch_get,
+    dispatch_hydrate,
     dispatch_iter_messages,
     dispatch_search,
     get_input_entity,
@@ -77,6 +78,32 @@ def configure():
     client = get_client(config_dict)
 
     client.loop.run_until_complete(ensure_authentication(client, _handle_auth))
+
+
+@cli.command()
+@click.argument("input_file", type=click.File("r", encoding="utf-8"), default="-")
+@click.argument("output_file", type=click.File("w", encoding="utf-8"), default="-")
+@click.pass_context
+def hydrate(ctx: click.Context, input_file: click.File, output_file: click.File):
+    """Hydrate a file with messages-ids."""
+    client = get_client(ctx.obj["credentials"])
+
+    channel_registry = {}
+    for message_id in input_file:
+        channel, post_id = message_id.split("/")
+
+        post_id = int(post_id)
+        if post_id is None:
+            continue
+        if channel not in channel_registry:
+            channel_registry[channel] = [post_id]
+        else:
+            channel_registry[channel].append(post_id)
+    with client:
+        for channel, post_ids in channel_registry.items():
+            client.loop.run_until_complete(
+                dispatch_hydrate(channel, post_ids, output_file, client)
+            )
 
 
 @cli.command()
