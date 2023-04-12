@@ -1,5 +1,6 @@
 """Dispatch functions that request data from Telethon and MTProto."""
 import datetime
+import sys
 import time
 from functools import partial
 from io import TextIOWrapper
@@ -10,7 +11,7 @@ import telethon
 import ujson
 from loguru import logger as log
 from telethon import TelegramClient
-from telethon.errors import FloodWaitError
+from telethon.errors import ChannelPrivateError, FloodWaitError, UserDeactivatedError
 
 from .types import MessageHandler
 from .utilities import str_dict
@@ -29,8 +30,14 @@ async def dispatch_iter_messages(
         params: the parameters to pass to the method.
         callback: the callback to pass data to.
     """
-    async for message in client.iter_messages(wait_time=10, **params):
-        await callback(message)
+    try:
+        async for message in client.iter_messages(wait_time=10, **params):
+            await callback(message)
+    except UserDeactivatedError:
+        log.error("User account has been deactivated by Telegram. Stopping now.")
+        sys.exit(127)
+    except ChannelPrivateError:
+        log.error(f"Entity {params['entity']} is private. Skipping.")
 
 
 async def dispatch_get(users, client: TelegramClient, params: Dict):
