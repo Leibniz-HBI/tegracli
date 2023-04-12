@@ -100,10 +100,11 @@ def hydrate(ctx: click.Context, input_file: click.File, output_file: click.File)
         else:
             channel_registry[channel].append(post_id)
     with client:
-        for channel, post_ids in channel_registry.items():
-            client.loop.run_until_complete(
-                dispatch_hydrate(channel, post_ids, output_file, client)
-            )
+        with click.progressbar(channel_registry.items()) as channel_iter:
+            for channel, post_ids in channel_iter:
+                client.loop.run_until_complete(
+                    dispatch_hydrate(channel, post_ids, output_file, client)
+                )
 
 
 @cli.command()
@@ -335,17 +336,14 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
     log.debug(f"Request with the following parameters: {_params}")
 
     # request data from telethon and write to disk
-    try:
-        with (Path(conf.name) / (member + ".jsonl")).open("a") as member_file:
-            client.loop.run_until_complete(
-                dispatch_iter_messages(
-                    client,
-                    params=_params,
-                    callback=partial(handle_message, file=member_file, injects=None),
-                )
+    with (Path(conf.name) / (member + ".jsonl")).open("a") as member_file:
+        client.loop.run_until_complete(
+            dispatch_iter_messages(
+                client,
+                params=_params,
+                callback=partial(handle_message, file=member_file, injects=None),
             )
-    except telethon.errors.ChannelPrivateError:
-        log.error(f"channel {profile.get('username') or ''} is private. Skipping.")
+        )
 
 
 def run_group(client: TelegramClient, groups: Tuple[str]):
