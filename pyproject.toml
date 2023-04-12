@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tegracli"
-version = "0.1.3"
+version = "0.2.0"
 description = "A research-focused Telegram CLI application"
 authors = ["Philipp Kessling <p.kessling@leibniz-hbi.de>", "Felix Münch <f.muench@lebniz-hbi.de>"]
 readme  = "README.md"
@@ -32,6 +32,7 @@ isort = "^5.10.1"
 pytest-cov = "^3.0.0"
 coverage = "^6.4.2"
 pydocstyle = "^6.1.1"
+pylint = "*"
 
 [tool.pytest.ini_options]
 addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli --capture=sys"
