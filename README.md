@@ -119,6 +119,29 @@ Options:
   --help  Show this message and exit.
 ```
 
+## HYDRATE
+
+To rehydrate messages from the API this command accepts a file with message IDs in the format of `$channel_name/$post_number`.
+Both input and output file are optional, if not given, `stdin` and `stdout` are used.
+
+Output data is JSONL, one message per line.
+
+```text
+Usage: tegracli hydrate [OPTIONS] [INPUT_FILE] [OUTPUT_FILE]
+
+  Hydrate a file with messages-ids.
+
+Options:
+  --help  Show this message and exit.
+```
+
+For example, to rehydrate message IDs:
+
+```bash
+echo test_channel/1234 | tegracli hydrate
+>> {"_":"Message","id": 1234, ... , "restriction_reason":[],"ttl_period":null}
+```
+
 ## GROUP INIT and GROUP RUN
 
 In order to support updatable  and long-running collections `tegracli` sports an *account group* feature which retrieves
