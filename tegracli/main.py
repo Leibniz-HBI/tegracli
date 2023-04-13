@@ -263,7 +263,9 @@ def reset(groups: Tuple[str]):
 @click.pass_context
 def run(ctx: click.Context, groups: Tuple[str]):
     """Load a group configuration and run the groups operations."""
-    run_group(ctx.obj["client"], groups)
+    client = ctx.obj["client"]
+    with client:
+        run_group(client, groups)
 
 
 def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> None:
