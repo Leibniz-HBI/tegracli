@@ -32,7 +32,7 @@ async def dispatch_iter_messages(
     """
     try:
         async for message in client.iter_messages(wait_time=10, **params):
-            await callback(message or params)
+            await callback(message)
     except UserDeactivatedError:
         log.error("User account has been deactivated by Telegram. Stopping now.")
         sys.exit(127)
@@ -116,12 +116,13 @@ async def handle_message(
     """
     if message is None:
         log.error("Message is None. Skipping.")
+        return
 
     m_dict = str_dict(message.to_dict())
     if injects is not None:
         for key, value in injects.items():
             m_dict[key] = value
-    # print(str(m_dict))
+
     ujson.dump(m_dict, file, ensure_ascii=True)
     file.write("\n")
 
