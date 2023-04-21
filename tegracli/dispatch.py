@@ -5,7 +5,7 @@ import time
 from functools import partial
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import telethon
 import ujson
@@ -32,7 +32,7 @@ async def dispatch_iter_messages(
     """
     try:
         async for message in client.iter_messages(wait_time=10, **params):
-            await callback(message)
+            await callback(message or params)
     except UserDeactivatedError:
         log.error("User account has been deactivated by Telegram. Stopping now.")
         sys.exit(127)
@@ -103,7 +103,9 @@ async def dispatch_search(queries: List[str], client: TelegramClient):
 
 
 async def handle_message(
-    message: telethon.types.Message, file: TextIOWrapper, injects: Optional[Dict]
+    message: Union[telethon.types.Message, Dict],
+    file: TextIOWrapper,
+    injects: Optional[Dict],
 ):
     """Accept incoming messages and log them to disk.
 
@@ -112,6 +114,9 @@ async def handle_message(
         file: opened file to dump the message's json into.
         injects: additional data to inject into the message.
     """
+    if message is None:
+        log.error("Message is None. Skipping.")
+
     m_dict = str_dict(message.to_dict())
     if injects is not None:
         for key, value in injects.items():
