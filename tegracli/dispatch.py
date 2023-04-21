@@ -5,13 +5,19 @@ import time
 from functools import partial
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import telethon
 import ujson
 from loguru import logger as log
 from telethon import TelegramClient
-from telethon.errors import ChannelPrivateError, FloodWaitError, UserDeactivatedError
+from telethon.errors import (
+    ChannelPrivateError,
+    FloodWaitError,
+    RPCError,
+    UserDeactivatedError,
+    UsernameNotOccupiedError,
+)
 
 from .types import MessageHandler
 from .utilities import str_dict
@@ -36,8 +42,12 @@ async def dispatch_iter_messages(
     except UserDeactivatedError:
         log.error("User account has been deactivated by Telegram. Stopping now.")
         sys.exit(127)
+    except UsernameNotOccupiedError:
+        log.error(f"Entity {params['entity']} does not exist. Skipping.")
     except ChannelPrivateError:
         log.error(f"Entity {params['entity']} is private. Skipping.")
+    except RPCError as err:
+        log.error(f"RPCError occurred: {err}")
 
 
 async def dispatch_get(users, client: TelegramClient, params: Dict):
@@ -103,7 +113,7 @@ async def dispatch_search(queries: List[str], client: TelegramClient):
 
 
 async def handle_message(
-    message: Union[telethon.types.Message, Dict],
+    message: Optional[telethon.types.Message],
     file: TextIOWrapper,
     injects: Optional[Dict],
 ):
