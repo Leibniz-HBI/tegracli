@@ -357,7 +357,13 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
     cwd = Path()
 
     if groups == ("all", ):
-        groups = list(Path().glob("*/"))
+        groups = [
+            path
+            for path
+            in Path().iterdir()
+            if path.is_dir()
+            and not path.name.startswith(".")
+        ]
 
     # iterate groups
     for group_name in groups:
