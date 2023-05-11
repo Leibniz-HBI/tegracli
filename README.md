@@ -190,12 +190,16 @@ tegracli-project/
     |- 10000001.jsonl
     |- 10000002.jsonl
 ```
-To run the project command your terminal to `tegracli group run my_group` to collect the latest post of the accounts you want to track.
+
+To run the project command your terminal to `tegracli group run my_group` to collect the latest post of the accounts you want to track. If you have multiple groups configured you can run all by running `tegracli group run all`. This interprets all subdirectories as valid groups. However, `tegracli` will fail if a subdirectory is not a valid group.
 
 ```text
 Usage: tegracli group run [OPTIONS] [GROUPS]...
 
-  load a group configuration and run the groups operations
+  Load a group configuration and run the groups operations.
+    
+  GROUPS are subdirectories with a valid group configuration.
+    If the special keyword all is given, all subdirectories are considered.
 ```
 
 ## Result File Format

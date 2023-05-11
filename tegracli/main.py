@@ -262,7 +262,11 @@ def reset(groups: Tuple[str]):
 @click.argument("groups", nargs=-1)
 @click.pass_context
 def run(ctx: click.Context, groups: Tuple[str]):
-    """Load a group configuration and run the groups operations."""
+    """Load a group configuration and run the groups operations.
+    
+    GROUPS are subdirectories with a valid group configuration.
+        If the special keyword all is given, all subdirectories are considered.
+    """
     client = ctx.obj["client"]
     with client:
         run_group(client, groups)
@@ -351,6 +355,9 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
 def run_group(client: TelegramClient, groups: Tuple[str]):
     """Runs the required operations for the specified groups."""
     cwd = Path()
+
+    if groups == ("all", ):
+        groups = list(Path().glob("*/"))
 
     # iterate groups
     for group_name in groups:
