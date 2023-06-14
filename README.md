@@ -4,13 +4,13 @@
 
 A convenience wrapper around Telethon and the Telegram Client API for research purposes.
 
-# Installation Instructions
+## Installation Instructions
 
 `tegracli` uses Poetry and python >= 3.9 and < 4.0 for building and installing.
 
 To install using pipx, run the following command `pipx install tegracli`.
 
-## How to get API keys
+### How to get API keys
 
 If you don't have API keys for Telegram, head over to [my.telegram.org](https://my.telegram.org).
 Click on [API development tools](https://my.telegram.org/apps), fill the form to create yourself an app and pluck the keys into `tegracli.conf.yml`. The session name can be arbitrary.
@@ -23,14 +23,39 @@ session_name: somesessionyo
 
 This template file is provided with the repository.
 
-# Usage
+## Usage
 
 `tegracli` is a terminal application to access the Telegram API for research purposes.
 In order to retrieve messages the configuration-file from the section before must be present in the directory you start `tegracli`.
 
+```text
+Usage: tegracli [OPTIONS] COMMAND [ARGS]...
+
+  Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!
+
+Options:
+  -v, --verbose            Logging verbosity.
+  -l, --log-file FILENAME  File to log to. Defaults to STDOUT.
+  -s, --serialize          Serialize output to JSON.
+  --help                   Show this message and exit.
+
+Commands:
+  configure  Configure tegracli.
+  get        Get messages for the specified channels by either ID or...
+  group      Manage account groups.
+  hydrate    Hydrate a file with messages-ids.
+  search     Searches Telegram content that is available to your account.
+```
+
+## Logging
+
+`tegracli` allows for configuring what and how it is logged. Per default logging is **disabled** and can be enabled by passing `--verbose` or `-v`, logging level can be increased by more `-vvvv`s. By default logging target is `STDOUT` but this can be redirected to a file with `--log-file yourfile.log`. Setting `--serialize` allows to be to write the entire logging information in JSON-encoded form.  
+
+## Commands 
+
 The following commands are available:
 
-## CONFIGURE
+### configure
 
 Opens an interactive prompt for configuring API-access. Aks you to input your API id, API hash and session name and requests
 a 2FA code from Telegram.
@@ -44,7 +69,7 @@ Options:
   --help  Show this message and exit.
 ```
 
-## GET
+### get
 
 To _get_ messages from a number of channels, use this command.
 
@@ -82,7 +107,7 @@ Options:
 | **reply_to**        | limit messages to replies *to* a specific user                                                                               |
 | **reverse/forward** | flag to indicate whether messages should be retrieved in chronological or reverse chronological order.                       |
 
-### Basic Examples
+#### Basic Examples
 
 To retrieve the last fifty messages from a Telegram channel:
 
@@ -106,7 +131,7 @@ To retrieve message sent before January, 1st 2022:
 ```bash
 tegracli get --reverse --offset_date 2022-01-01 corona_infokanal_bmg
 ```
-## SEARCH
+### search
 
 To _search_ messages of your chats and groups and channels you are subscribed to, use this command.
 
@@ -119,7 +144,7 @@ Options:
   --help  Show this message and exit.
 ```
 
-## HYDRATE
+### hydrate
 
 To rehydrate messages from the API this command accepts a file with message IDs in the format of `$channel_name/$post_number`.
 Both input and output file are optional, if not given, `stdin` and `stdout` are used.
@@ -142,15 +167,13 @@ echo test_channel/1234 | tegracli hydrate
 >> {"_":"Message","id": 1234, ... , "restriction_reason":[],"ttl_period":null}
 ```
 
-## GROUP INIT and GROUP RUN
+### groups
 
-In order to support updatable  and long-running collections `tegracli` sports an *account group* feature which retrieves
-the history of a given set of accounts and is able to retrieve updates on each of these accounts.
+In order to support updatable  and long-running collections `tegracli` sports an *account group* feature which retrieves the history of a given set of accounts and is able to retrieve updates on each of these accounts.
 
-Groups are initialized by calling `teracli group init`, where accounts to track are stated by either stating them as arguments
-or by reading in a file.
+Groups are initialized by calling `teracli group init`, where accounts to track are stated by either stating them as arguments or by reading in a file.
 
-### Account Group File Format
+#### Account Group File Format
 
 Account files are expected to follow these requirements:
 
@@ -207,7 +230,7 @@ Usage: tegracli group run [OPTIONS] [GROUPS]...
 Messages are stored in `jsonl`-files per channel or query. For channels filename is the channel's or user's id, for searches the query.
 **BEWARE:** how directories and files are structured is subject to active development and prone to changes in the near future.
 
-# Developer Installation
+## Developer Installation
 
 1. Install [poetry](https://python-poetry.org/docs/#installation),
 2. Clone repository and unzip, if necessary,

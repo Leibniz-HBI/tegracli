@@ -39,14 +39,24 @@ async def _handle_auth(client: TelegramClient):
     await client.send_code_request(phone_number)
     await client.sign_in(phone_number, click.prompt("Enter 2FA code"))
 
+log_levels = {
+    1: "CRITIAL",
+    2: "ERROR",
+    3: "WARNING",
+    4: "INFO",
+    5: "DEBUG",
+}
 
 @click.group()
-@click.option("--debug/--no-debug", default=False)
+@click.option("--verbose", "-v", count=True, help="Logging verbosity.", default=0)   
+@click.option("--log-file", "-l", help="File to log to. Defaults to STDOUT.", type=click.File("w", encoding="UTF-8"), default="-")
+@click.option("--serialize", "-s", help="Serialize output to JSON.", is_flag=True, default=False)
 @click.pass_context
-def cli(ctx: click.Context, debug: bool):
+def cli(ctx: click.Context, verbose: int, log_file: click.File, serialize: bool) -> None:
     """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
-    if debug is True:
-        log.add("tegracli.log.json", serialize=True)
+    if verbose != 0:
+        log.remove()
+        log.add(log_file, level=log_levels[verbose], serialize=serialize)
 
     if ctx.obj is None:
         ctx.obj = {}
