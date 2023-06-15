@@ -33,6 +33,7 @@ pytest-cov = "^3.0.0"
 coverage = "^6.4.2"
 pydocstyle = "^6.1.1"
 pylint = "*"
+pre-commit = "^3.3.3"
 
 [tool.pytest.ini_options]
 addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli --capture=sys"
