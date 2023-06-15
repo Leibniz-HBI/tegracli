@@ -34,6 +34,8 @@ Usage: tegracli [OPTIONS] COMMAND [ARGS]...
   Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!
 
 Options:
+  -d, --debug              Enable legacy debugging, is overwritten by the
+                           other options. Defaults to False.
   -v, --verbose            Logging verbosity.
   -l, --log-file FILENAME  File to log to. Defaults to STDOUT.
   -s, --serialize          Serialize output to JSON.
@@ -49,7 +51,7 @@ Commands:
 
 ## Logging
 
-`tegracli` allows for configuring what and how it is logged. Per default logging is **disabled** and can be enabled by passing `--verbose` or `-v`, logging level can be increased by more `-vvvv`s. By default logging target is `STDOUT` but this can be redirected to a file with `--log-file yourfile.log`. Setting `--serialize` allows to be to write the entire logging information in JSON-encoded form.  
+`tegracli` allows for configuring what and how it is logged. Per default logging is **disabled** and can be enabled by passing `--verbose` or `-v`, logging level can be increased by more `-vvvv`s. By default logging target is `STDOUT` but this can be redirected to a file with `--log-file yourfile.log`. Setting `--serialize` allows to be to write the entire logging information in JSON-encoded form. `--debug` is the legacy option used by `tegracli` <= 0.2.5, this will set serialized logging into `tegracli.log.jsonl` at the `DEBUG` level; it is overwritten by setting the `--verbose` option.
 
 ## Commands 
 

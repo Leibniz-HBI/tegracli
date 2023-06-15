@@ -39,24 +39,48 @@ async def _handle_auth(client: TelegramClient):
     await client.send_code_request(phone_number)
     await client.sign_in(phone_number, click.prompt("Enter 2FA code"))
 
+
 log_levels = {
-    1: "CRITIAL",
+    1: "CRITICAL",
     2: "ERROR",
     3: "WARNING",
     4: "INFO",
     5: "DEBUG",
 }
 
+
 @click.group()
-@click.option("--verbose", "-v", count=True, help="Logging verbosity.", default=0)   
-@click.option("--log-file", "-l", help="File to log to. Defaults to STDOUT.", type=click.File("w", encoding="UTF-8"), default="-")
-@click.option("--serialize", "-s", help="Serialize output to JSON.", is_flag=True, default=False)
+@click.option(
+    "--debug",
+    "-d",
+    is_flag=True,
+    help="Enable legacy debugging, is overwritten by the other options. Defaults to False.",
+    default=False,
+)
+@click.option("--verbose", "-v", count=True, help="Logging verbosity.", default=0)
+@click.option(
+    "--log-file",
+    "-l",
+    help="File to log to. Defaults to STDOUT.",
+    type=click.File("w", encoding="UTF-8"),
+    default="-",
+)
+@click.option(
+    "--serialize", "-s", help="Serialize output to JSON.", is_flag=True, default=False
+)
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, log_file: click.File, serialize: bool) -> None:
+def cli(
+    ctx: click.Context, debug: bool, verbose: int, log_file: click.File, serialize: bool
+) -> None:
     """Tegracli!! Retrieve messages from *Te*le*gra*m with a *CLI*!"""
-    if verbose != 0:
-        log.remove()
-        log.add(log_file, level=log_levels[verbose], serialize=serialize)
+    log.remove()
+
+    serialize = debug or serialize
+    log_file = "tegracli.log.jsonl" if debug else log_file
+    log_level = log_levels[verbose] if verbose != 0 else "DEBUG"
+
+    if verbose != 0 or debug:
+        log.add(log_file, level=log_level, serialize=serialize)
 
     if ctx.obj is None:
         ctx.obj = {}
@@ -273,7 +297,7 @@ def reset(groups: Tuple[str]):
 @click.pass_context
 def run(ctx: click.Context, groups: Tuple[str]):
     """Load a group configuration and run the groups operations.
-    
+
     GROUPS are subdirectories with a valid group configuration.
         If the special keyword all is given, all subdirectories are considered.
     """
@@ -366,13 +390,11 @@ def run_group(client: TelegramClient, groups: Tuple[str]):
     """Runs the required operations for the specified groups."""
     cwd = Path()
 
-    if groups == ("all", ):
+    if groups == ("all",):
         groups = [
             path
-            for path
-            in Path().iterdir()
-            if path.is_dir()
-            and not path.name.startswith(".")
+            for path in Path().iterdir()
+            if path.is_dir() and not path.name.startswith(".")
         ]
 
     # iterate groups
