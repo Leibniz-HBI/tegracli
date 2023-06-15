@@ -197,7 +197,7 @@ def test_configure(runner: CliRunner, tmp_path: Path):
     with runner.isolated_filesystem(temp_dir=tmp_path):
         result = runner.invoke(
             cli,
-            ["--no-debug", "configure"],
+            ["configure"],
             input="12345678\n123042jdsnfsisnfkr\ntestytest",
         )
         assert result.exit_code == 0
