@@ -1,3 +1,11 @@
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/tegracli)
+![GitHub License](https://img.shields.io/github/license/Leibniz-HBI/tegracli)
+![GitHub Tag](https://img.shields.io/github/v/tag/Leibniz-HBI/tegracli)
+![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/Leibniz-HBI/tegracli)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/tegracli)
+
+---
+
 # tegracli
 
 ![The TEGRACLI logo](https://github.com/Leibniz-HBI/tegracli/blob/trunk/tegracli.png?raw=true)
