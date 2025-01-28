@@ -1,8 +1,11 @@
-[tool.poetry]
+[project]
 name = "tegracli"
 version = "0.2.7"
 description = "A research-focused Telegram CLI application"
-authors = ["Philipp Kessling <p.kessling@leibniz-hbi.de>", "Felix Münch <f.muench@lebniz-hbi.de>"]
+authors = [
+	{ name = "Philipp Kessling", email = "p.kessling@leibniz-hbi.de" },
+	{ name = "Felix Münch", email = "f.muench@lebniz-hbi.de"}
+]
 readme  = "README.md"
 license = "MIT"
 repository  = "https://github.com/Leibniz-HBI/tegracli"
@@ -12,17 +15,17 @@ classifiers = [
 		"Environment :: Console",
 		"Intended Audience :: Science/Research",
 ]
+requires-python = ">=3.9"
+dependencies = [
+	"Telethon",
+	"ujson",
+	"click",
+	"loguru",
+	"PyYAML",
+	"pandas (>=2.2.3); python_version >= '3.13'",
+]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-Telethon = "*"
-ujson = "*"
-click = "*"
-loguru = "*"
-PyYAML = "*"
-pandas = "*"
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-socket = "*"
 pytest-asyncio = "*"
@@ -42,7 +45,7 @@ asyncio_mode = "strict"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
+[project.scripts]
 tegracli = 'tegracli.main:cli'
 
 [tool.isort]
