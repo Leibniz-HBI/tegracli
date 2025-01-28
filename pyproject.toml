@@ -1,6 +1,6 @@
 [project]
 name = "tegracli"
-version = "0.2.7"
+version = "0.3.0"
 description = "A research-focused Telegram CLI application"
 authors = [
 	{ name = "Philipp Kessling", email = "p.kessling@leibniz-hbi.de" },
