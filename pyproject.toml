@@ -22,7 +22,7 @@ dependencies = [
 	"click",
 	"loguru",
 	"PyYAML",
-	"pandas",
+	"pandas (>=2.2.3); python_version >= '3.13'",
 ]
 
 [tool.poetry.group.dev.dependencies]
