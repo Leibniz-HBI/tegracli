@@ -2,11 +2,10 @@
 
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
-# import atexit
+
 import re
 import sys
 from datetime import datetime
-from email.policy import default
 from functools import partial
 from pathlib import Path
 from typing import List, Tuple
@@ -28,8 +27,6 @@ from .dispatch import (
 )
 from .group import Group
 from .utilities import ensure_authentication, get_client
-
-# atexit.register(lambda: log.debug("Terminating."))
 
 CONFIGURATION_PATH: Path = Path("tegracli.conf.yml")
 """Path pointing to the tegracli.auth config."""
@@ -116,11 +113,15 @@ def configure():
 
 
 @cli.command()
-@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
+@click.option(
+    "--download", "-d", is_flag=True, help="Download media files.", default=False
+)
 @click.argument("input_file", type=click.File("r", encoding="utf-8"), default="-")
 @click.argument("output_file", type=click.File("w", encoding="utf-8"), default="-")
 @click.pass_context
-def hydrate(ctx: click.Context, download: bool, input_file: click.File, output_file: click.File):
+def hydrate(
+    ctx: click.Context, download: bool, input_file: click.File, output_file: click.File
+):
     """Hydrate a file with messages-ids."""
     client = get_client(ctx.obj["credentials"])
 
@@ -139,7 +140,9 @@ def hydrate(ctx: click.Context, download: bool, input_file: click.File, output_f
         with click.progressbar(channel_registry.items()) as channel_iter:
             for channel, post_ids in channel_iter:
                 client.loop.run_until_complete(
-                    dispatch_hydrate(channel, post_ids, output_file, client, download_media=download)
+                    dispatch_hydrate(
+                        channel, post_ids, output_file, client, download_media=download
+                    )
                 )
 
 
@@ -173,10 +176,12 @@ def hydrate(ctx: click.Context, download: bool, input_file: click.File, output_f
 @click.option(
     "--reply_to", "-r", type=int, help="Only messages replied to specific post id."
 )
-@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
+@click.option(
+    "--download", "-d", is_flag=True, help="Download media files.", default=False
+)
 @click.argument("channels", nargs=-1)
 @click.pass_context
-def get(  # pylint: disable=too-many-arguments
+def get(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     ctx: click.Context,
     limit: int,
     offset_date: datetime,
@@ -213,7 +218,9 @@ def get(  # pylint: disable=too-many-arguments
     params["reverse"] = reverse
 
     with client:
-        client.loop.run_until_complete(dispatch_get(channels, client, params=params, download_media=download))
+        client.loop.run_until_complete(
+            dispatch_get(channels, client, params=params, download_media=download)
+        )
 
 
 @cli.group()
@@ -236,10 +243,12 @@ def group():
     help="Start date for the collection. Must be in YYYY-MM-DD format.",
 )
 @click.option("--limit", "-l", type=int, help="number of posts fo retrieve in one run")
-@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
+@click.option(
+    "--download", "-d", is_flag=True, help="Download media files.", default=False
+)
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
-def init(
+def init(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     read_file: str,
     start_date: datetime,
     limit: int,
