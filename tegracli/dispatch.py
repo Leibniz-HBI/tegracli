@@ -1,4 +1,5 @@
 """Dispatch functions that request data from Telethon and MTProto."""
+
 import datetime
 import sys
 import time
@@ -50,7 +51,9 @@ async def dispatch_iter_messages(
         log.error(f"RPCError occurred: {err}")
 
 
-async def dispatch_get(users, client: TelegramClient, params: Dict, download_media=False):
+async def dispatch_get(
+    users, client: TelegramClient, params: Dict, download_media=False
+):
     """Get the message history of a specified set of users."""
     for user in users:
         done = False
@@ -66,7 +69,12 @@ async def dispatch_get(users, client: TelegramClient, params: Dict, download_med
                     await dispatch_iter_messages(
                         client,
                         _params,
-                        partial(handle_message, file=file, injects={"user": o_dict}, download_media=download_media),
+                        partial(
+                            handle_message,
+                            file=file,
+                            injects={"user": o_dict},
+                            download_media=download_media,
+                        ),
                     )
             except FloodWaitError as err:
                 delta = datetime.timedelta(seconds=err.seconds)
@@ -91,7 +99,12 @@ async def dispatch_hydrate(
     await dispatch_iter_messages(
         client,
         {"entity": channel, "ids": post_ids},
-        partial(handle_message, file=output_file, injects=None, download_media=download_media),
+        partial(
+            handle_message,
+            file=output_file,
+            injects=None,
+            download_media=download_media,
+        ),
     )
 
 

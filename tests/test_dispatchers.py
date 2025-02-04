@@ -105,7 +105,9 @@ def test_dispatch_hydrate(params: str, results: int, client: TelegramClient):
 @pytest.mark.parametrize(
     "params,results", [["sWagenknecht/868", 868], ["AntiSpiegel/11553", 11553]]
 )
-def test_dispatch_hydrate_with_media_downloads(params: str, results: int, client: TelegramClient):
+def test_dispatch_hydrate_with_media_downloads(
+    params: str, results: int, client: TelegramClient
+):
     """Should get message for existing channels.
 
     Asserts:
