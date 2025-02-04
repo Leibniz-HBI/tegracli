@@ -27,7 +27,6 @@ dependencies = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
-pytest-socket = "*"
 pytest-asyncio = "*"
 black = "*"
 isort = "*"
@@ -38,7 +37,7 @@ pylint = "*"
 pre-commit = "*"
 
 [tool.pytest.ini_options]
-addopts = "--disable-socket --cov-report html:tests/coverage --cov=tegracli --capture=sys"
+addopts = "--cov-report html:tests/coverage --cov=tegracli --capture=sys"
 asyncio_mode = "strict"
 
 [build-system]

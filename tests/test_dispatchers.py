@@ -37,7 +37,6 @@ def client():
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 def test_search(queries: List[str], client: TelegramClient):
     """Should run a search on the specified queries.
 
@@ -48,7 +47,6 @@ def test_search(queries: List[str], client: TelegramClient):
         client.loop.run_until_complete(dispatch_search(queries, client))
 
 
-@pytest.mark.enable_socket
 @pytest.mark.api
 @pytest.mark.parametrize(
     "params",
@@ -68,7 +66,6 @@ def test_get(queries: List[str], client: TelegramClient, params: Dict):
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 @pytest.mark.parametrize(
     "params,results", [["QlobalChange/12182", 12182], ["QlobalChangeEspana/162", 162]]
 )
@@ -105,7 +102,6 @@ def test_dispatch_hydrate(params: str, results: int, client: TelegramClient):
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 @pytest.mark.parametrize(
     "params,results", [["sWagenknecht/868", 868], ["AntiSpiegel/11553", 11553]]
 )
