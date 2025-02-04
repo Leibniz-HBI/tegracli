@@ -6,6 +6,7 @@
 import re
 import sys
 from datetime import datetime
+from email.policy import default
 from functools import partial
 from pathlib import Path
 from typing import List, Tuple
@@ -115,10 +116,11 @@ def configure():
 
 
 @cli.command()
+@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
 @click.argument("input_file", type=click.File("r", encoding="utf-8"), default="-")
 @click.argument("output_file", type=click.File("w", encoding="utf-8"), default="-")
 @click.pass_context
-def hydrate(ctx: click.Context, input_file: click.File, output_file: click.File):
+def hydrate(ctx: click.Context, download: bool, input_file: click.File, output_file: click.File):
     """Hydrate a file with messages-ids."""
     client = get_client(ctx.obj["credentials"])
 
@@ -137,7 +139,7 @@ def hydrate(ctx: click.Context, input_file: click.File, output_file: click.File)
         with click.progressbar(channel_registry.items()) as channel_iter:
             for channel, post_ids in channel_iter:
                 client.loop.run_until_complete(
-                    dispatch_hydrate(channel, post_ids, output_file, client)
+                    dispatch_hydrate(channel, post_ids, output_file, client, download_media=download)
                 )
 
 
@@ -171,6 +173,7 @@ def hydrate(ctx: click.Context, input_file: click.File, output_file: click.File)
 @click.option(
     "--reply_to", "-r", type=int, help="Only messages replied to specific post id."
 )
+@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
 @click.argument("channels", nargs=-1)
 @click.pass_context
 def get(  # pylint: disable=too-many-arguments
@@ -184,6 +187,7 @@ def get(  # pylint: disable=too-many-arguments
     from_user: str,
     reverse: bool,
     reply_to: int,
+    download: bool,
     channels: List[str],
 ) -> None:
     """Get messages for the specified channels by either ID or username."""
@@ -209,7 +213,7 @@ def get(  # pylint: disable=too-many-arguments
     params["reverse"] = reverse
 
     with client:
-        client.loop.run_until_complete(dispatch_get(channels, client, params=params))
+        client.loop.run_until_complete(dispatch_get(channels, client, params=params, download_media=download))
 
 
 @cli.group()
@@ -232,19 +236,21 @@ def group():
     help="Start date for the collection. Must be in YYYY-MM-DD format.",
 )
 @click.option("--limit", "-l", type=int, help="number of posts fo retrieve in one run")
+@click.option("--download", "-d", is_flag=True, help="Download media files.", default=False)
 @click.argument("name", type=str, nargs=1, required=True)
 @click.argument("accounts", type=str, nargs=-1)
 def init(
     read_file: str,
     start_date: datetime,
     limit: int,
+    download: bool,
     name: str,
     accounts: List[str],
 ):
     """Initialize a new account group."""
     cwd = Path()
     results_directory = cwd / name
-    params = {"limit": limit, "reverse": True}
+    params = {"limit": limit, "reverse": True, "download": download}
     if start_date is not None:
         params["offset_date"] = start_date  # type: ignore
     # check whether the directory we try to create is already there.

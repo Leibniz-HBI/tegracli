@@ -48,8 +48,8 @@ def test_search(queries: List[str], client: TelegramClient):
         client.loop.run_until_complete(dispatch_search(queries, client))
 
 
-@pytest.mark.api
 @pytest.mark.enable_socket
+@pytest.mark.api
 @pytest.mark.parametrize(
     "params",
     [{"limit": 1}, {"limit": 2, "reverse": True}, {"offset_id": 5, "limit": 1}],
@@ -102,3 +102,42 @@ def test_dispatch_hydrate(params: str, results: int, client: TelegramClient):
                 assert int(res["id"]) == results
             except ValueError:
                 continue
+
+
+@pytest.mark.api
+@pytest.mark.enable_socket
+@pytest.mark.parametrize(
+    "params,results", [["sWagenknecht/868", 868], ["AntiSpiegel/11553", 11553]]
+)
+def test_dispatch_hydrate_with_media_downloads(params: str, results: int, client: TelegramClient):
+    """Should get message for existing channels.
+
+    Asserts:
+    - Should not throw exception
+    """
+    print("params", params, "results", results)
+
+    output_file = Path("test_hydrate.jsonl")
+    if output_file.exists():
+        output_file.unlink()
+    channel, post_id = params.split("/")
+    post_id = int(post_id)
+
+    with output_file.open("a", encoding="utf-8") as file:
+        with client:
+            client.loop.run_until_complete(
+                dispatch_hydrate(channel, [post_id], file, client)
+            )
+
+    with output_file.open("r", encoding="utf-8") as file:
+        for line in file:
+            try:
+                res = ujson.loads(
+                    line
+                )  # pylint: disable=I1101  # c-extensions-no-member, what we
+                # know it's there and that's why we don't want to see it
+                assert int(res["id"]) == results
+            except ValueError:
+                continue
+    assert Path("media/1229270907/868-2025-01-27.jpg").exists()
+    assert Path("media/1419623710/11553-2025-02-02.mp4").exists()

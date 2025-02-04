@@ -50,7 +50,7 @@ async def dispatch_iter_messages(
         log.error(f"RPCError occurred: {err}")
 
 
-async def dispatch_get(users, client: TelegramClient, params: Dict):
+async def dispatch_get(users, client: TelegramClient, params: Dict, download_media=False):
     """Get the message history of a specified set of users."""
     for user in users:
         done = False
@@ -66,7 +66,7 @@ async def dispatch_get(users, client: TelegramClient, params: Dict):
                     await dispatch_iter_messages(
                         client,
                         _params,
-                        partial(handle_message, file=file, injects={"user": o_dict}),
+                        partial(handle_message, file=file, injects={"user": o_dict}, download_media=download_media),
                     )
             except FloodWaitError as err:
                 delta = datetime.timedelta(seconds=err.seconds)
@@ -85,12 +85,13 @@ async def dispatch_hydrate(
     post_ids: List[str],
     output_file: TextIOWrapper,
     client: TelegramClient,
+    download_media: bool = False,
 ):
     """Dispatch a hydration by channel_id/post_id."""
     await dispatch_iter_messages(
         client,
         {"entity": channel, "ids": post_ids},
-        partial(handle_message, file=output_file, injects=None),
+        partial(handle_message, file=output_file, injects=None, download_media=download_media),
     )
 
 
@@ -116,6 +117,7 @@ async def handle_message(
     message: Optional[telethon.types.Message],
     file: TextIOWrapper,
     injects: Optional[Dict],
+    download_media: bool = False,
 ):
     """Accept incoming messages and log them to disk.
 
@@ -123,6 +125,7 @@ async def handle_message(
         message: incoming single message.
         file: opened file to dump the message's json into.
         injects: additional data to inject into the message.
+        download_media: whether to download media or not.
     """
     if message is None:
         log.error("Message is None. Skipping.")
@@ -132,6 +135,14 @@ async def handle_message(
     if injects is not None:
         for key, value in injects.items():
             m_dict[key] = value
+
+    if download_media:
+        channel_id = message.peer_id.channel_id
+        message_id = message.id
+        date = message.date.strftime("%Y-%m-%d")
+        dir_name = f"media/{channel_id}/{message_id}-{date}"
+
+        await message.download_media(dir_name)
 
     ujson.dump(m_dict, file, ensure_ascii=True)
     file.write("\n")
