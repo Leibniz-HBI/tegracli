@@ -148,6 +148,8 @@ async def handle_message(
     if injects is not None:
         for key, value in injects.items():
             m_dict[key] = value
+    ujson.dump(m_dict, file, ensure_ascii=False)
+    file.write("\n")
 
     if download_media:
         channel_id = message.peer_id.channel_id
@@ -156,9 +158,6 @@ async def handle_message(
         dir_name = f"media/{channel_id}/{message_id}-{date}"
 
         await message.download_media(dir_name)
-
-    ujson.dump(m_dict, file, ensure_ascii=True)
-    file.write("\n")
 
 
 async def get_input_entity(
