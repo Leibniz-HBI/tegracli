@@ -8,6 +8,8 @@ This has the implication that we need valid credentials in a valid `tegracli.con
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=wrong-import-position
+# pylint: disable=too-many-arguments
+# pylint: disable=c-extension-no-member
 
 from pathlib import Path
 from typing import Dict, List
@@ -52,17 +54,31 @@ def test_search(queries: List[str], client: TelegramClient):
     "params",
     [{"limit": 1}, {"limit": 2, "reverse": True}, {"offset_id": 5, "limit": 1}],
 )
-@pytest.mark.parametrize("queries", [["channelnotfound123"], ["channel", "1446651076"]])
-def test_get(queries: List[str], client: TelegramClient, params: Dict):
+@pytest.mark.parametrize("queries", [["channelnotfound123"], ["corona_infokanal_bmg"]])
+@pytest.mark.parametrize("download", [True, False])
+def test_get(
+    queries: List[str],
+    client: TelegramClient,
+    params: Dict,
+    download: bool,
+    monkeypatch,
+    tmp_path,
+):
     """Should get message for existing channels.
 
     Asserts:
     - Should not throw exception
     """
-    # client = Mock(TelegramClient)
-    # client.loop = Mock(AbstractEventLoop)
+    monkeypatch.chdir(tmp_path)
+
     with client:
         client.loop.run_until_complete(dispatch_get(queries, client, params))
+    for query in queries:
+        if query.isnumeric():
+            assert Path(f"{query}.jsonl").exists()
+            assert Path(f"{query}.jsonl").stat().st_size > 0
+            if download:
+                assert Path("media").exists()
 
 
 @pytest.mark.api
