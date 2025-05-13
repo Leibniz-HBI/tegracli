@@ -8,6 +8,8 @@ This has the implication that we need valid credentials in a valid `tegracli.con
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=wrong-import-position
+# pylint: disable=too-many-arguments
+# pylint: disable=c-extension-no-member
 
 from pathlib import Path
 from typing import Dict, List
@@ -37,7 +39,6 @@ def client():
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 def test_search(queries: List[str], client: TelegramClient):
     """Should run a search on the specified queries.
 
@@ -49,26 +50,38 @@ def test_search(queries: List[str], client: TelegramClient):
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 @pytest.mark.parametrize(
     "params",
     [{"limit": 1}, {"limit": 2, "reverse": True}, {"offset_id": 5, "limit": 1}],
 )
-@pytest.mark.parametrize("queries", [["channelnotfound123"], ["channel", "1446651076"]])
-def test_get(queries: List[str], client: TelegramClient, params: Dict):
+@pytest.mark.parametrize("queries", [["channelnotfound123"], ["corona_infokanal_bmg"]])
+@pytest.mark.parametrize("download", [True, False])
+def test_get(
+    queries: List[str],
+    client: TelegramClient,
+    params: Dict,
+    download: bool,
+    monkeypatch,
+    tmp_path,
+):
     """Should get message for existing channels.
 
     Asserts:
     - Should not throw exception
     """
-    # client = Mock(TelegramClient)
-    # client.loop = Mock(AbstractEventLoop)
+    monkeypatch.chdir(tmp_path)
+
     with client:
         client.loop.run_until_complete(dispatch_get(queries, client, params))
+    for query in queries:
+        if query.isnumeric():
+            assert Path(f"{query}.jsonl").exists()
+            assert Path(f"{query}.jsonl").stat().st_size > 0
+            if download:
+                assert Path("media").exists()
 
 
 @pytest.mark.api
-@pytest.mark.enable_socket
 @pytest.mark.parametrize(
     "params,results", [["QlobalChange/12182", 12182], ["QlobalChangeEspana/162", 162]]
 )
@@ -102,3 +115,43 @@ def test_dispatch_hydrate(params: str, results: int, client: TelegramClient):
                 assert int(res["id"]) == results
             except ValueError:
                 continue
+
+
+@pytest.mark.api
+@pytest.mark.parametrize(
+    "params,results", [["sWagenknecht/868", 868], ["AntiSpiegel/11553", 11553]]
+)
+def test_dispatch_hydrate_with_media_downloads(
+    params: str, results: int, client: TelegramClient
+):
+    """Should get message for existing channels.
+
+    Asserts:
+    - Should not throw exception
+    """
+    print("params", params, "results", results)
+
+    output_file = Path("test_hydrate.jsonl")
+    if output_file.exists():
+        output_file.unlink()
+    channel, post_id = params.split("/")
+    post_id = int(post_id)
+
+    with output_file.open("a", encoding="utf-8") as file:
+        with client:
+            client.loop.run_until_complete(
+                dispatch_hydrate(channel, [post_id], file, client)
+            )
+
+    with output_file.open("r", encoding="utf-8") as file:
+        for line in file:
+            try:
+                res = ujson.loads(
+                    line
+                )  # pylint: disable=I1101  # c-extensions-no-member, what we
+                # know it's there and that's why we don't want to see it
+                assert int(res["id"]) == results
+            except ValueError:
+                continue
+    assert Path("media/1229270907/868-2025-01-27.jpg").exists()
+    assert Path("media/1419623710/11553-2025-02-02.mp4").exists()
