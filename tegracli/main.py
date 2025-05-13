@@ -375,8 +375,9 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
 
     log.debug(f"Request with the following parameters: {_params}")
 
+    file_path = get_group_file_name(conf.name, member)
     # request data from telethon and write to disk
-    with (Path(conf.name) / (member + ".jsonl")).open("a") as member_file:
+    with file_path.open("a") as member_file:
         client.loop.run_until_complete(
             dispatch_iter_messages(
                 client,
@@ -384,6 +385,26 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
                 callback=partial(handle_message, file=member_file, injects=None),
             )
         )
+
+
+def get_group_file_name(group_name: str, member: str) -> Path:
+    """Gets the current file path for the group member.
+
+    It will roll over files if the previous one exceeds the maximum size.
+    """
+    max_size = 128 * 1024 * 1024  # 128 MB
+
+    # Create the directory if it doesn't exist
+    group_dir = Path(group_name)
+    group_dir.mkdir(exist_ok=True)
+    file_path = group_dir / f"{member}.jsonl"
+
+    if file_path.exists() and file_path.stat().st_size > max_size:
+        # Roll over the file
+        now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path.rename(file_path.with_suffix(f".{now}.jsonl"))
+        log.info(f"Rolled over {file_path} to {file_path.with_suffix(f'.{now}.jsonl')}")
+    return file_path
 
 
 def run_group(client: TelegramClient, groups: Tuple[str]):
