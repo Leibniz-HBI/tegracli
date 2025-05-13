@@ -399,7 +399,7 @@ def get_group_file_name(group_name: str, member: str) -> Path:
     group_dir.mkdir(exist_ok=True)
     file_path = group_dir / f"{member}.jsonl"
 
-    if file_path.exists() and file_path.stat().st_size > max_size:
+    if file_path.exists() and file_path.stat().st_size >= max_size:
         # Roll over the file
         now = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_path.rename(file_path.with_suffix(f".{now}.jsonl"))
