@@ -2,16 +2,17 @@
 
 2022, Philipp Kessling, Leibniz-Institute for Media Research
 """
+
 # import atexit
 import re
 import sys
 from datetime import datetime
-from functools import partial
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import click
 import telethon
+import ujson
 import yaml
 from loguru import logger as log
 from telethon import TelegramClient
@@ -23,10 +24,9 @@ from .dispatch import (
     dispatch_search,
     get_input_entity,
     get_profile,
-    handle_message,
 )
 from .group import Group
-from .utilities import ensure_authentication, get_client
+from .utilities import ensure_authentication, get_client, str_dict
 
 # atexit.register(lambda: log.debug("Terminating."))
 
@@ -375,16 +375,38 @@ def _handle_group_member(member: str, conf: Group, client: TelegramClient) -> No
 
     log.debug(f"Request with the following parameters: {_params}")
 
-    file_path = get_group_file_name(conf.name, member)
-    # request data from telethon and write to disk
-    with file_path.open("a") as member_file:
-        client.loop.run_until_complete(
-            dispatch_iter_messages(
-                client,
-                params=_params,
-                callback=partial(handle_message, file=member_file, injects=None),
-            )
+    async def handle_group_message(
+        tg_message: Optional[telethon.types.Message],
+    ):
+        """Accept incoming messages and log them to disk.
+
+        Args:
+            tg_message: incoming single message.
+        """
+        if tg_message is None:
+            log.error("Message is None. Skipping.")
+            return
+
+        log.debug(
+            f"Persisting message {tg_message.peer_id.channel_id}/{tg_message.id} for {member}."
         )
+
+        with get_group_file_name(conf.name, member).open(
+            "at", encoding="utf-8"
+        ) as file:
+            ujson.dump(  # pylint: disable=c-extension-no-member
+                str_dict(tg_message.to_dict()), file, ensure_ascii=False
+            )
+            file.write("\n")
+
+    # request data from telethon and write to disk
+    client.loop.run_until_complete(
+        dispatch_iter_messages(
+            client,
+            params=_params,
+            callback=handle_group_message,
+        )
+    )
 
 
 def get_group_file_name(group_name: str, member: str) -> Path:
