@@ -133,11 +133,11 @@ def test_account_group_run(runner: CliRunner, group_config: Path, tmp_path: Path
     """Should run a group.
 
     It must create a directory named by user input, read in a file with tg-accounts,
-    resolve those user names and save messages by user in a jsonl-file.
+    resolve those usernames and save messages by user in a jsonl-file.
 
     I.e. a call to this command would look like this:
     `tegracli group init --read_file account_list.csv my_little_account_list` to
-    load a account list from a file and write the configuration file to disk.
+    load an account list from a file and write the configuration file to disk.
     """
     with runner.isolated_filesystem(temp_dir=tmp_path) as temp_dir:
         conf_file = Path(temp_dir) / "tegracli.conf.yml"
