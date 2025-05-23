@@ -424,8 +424,9 @@ def get_group_file_name(group_name: str, member: str) -> Path:
     if file_path.exists() and file_path.stat().st_size >= max_size:
         # Roll over the file
         now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_path.rename(file_path.with_suffix(f".{now}.jsonl"))
-        log.info(f"Rolled over {file_path} to {file_path.with_suffix(f'.{now}.jsonl')}")
+        rolled_file_path = file_path.with_suffix(f".{now}.jsonl")
+        file_path.rename(rolled_file_path)
+        log.info(f"Rolled over {file_path} to {rolled_file_path}")
     return file_path
 
 
